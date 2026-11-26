@@ -15,5 +15,7 @@ CELL_PRESETS = [
     ["66160", 66, 160],   // Yinlong LTO 66160 40 Ah: 66 +-1 x 161 +-1 (whether 161 includes the studs is unclear)
 ];
 
-function cell_preset(name) = let(hits = [for (p = CELL_PRESETS) if (p[0] == name) p]) len(hits) == 1 ? hits[0] : undef;
+// The Customizer reads a dropdown's numeric-looking names (18650) as numbers, so a name may arrive as either.
+function cell_preset(name) = let(n = is_num(name) ? str(name) : name, hits = [for (p = CELL_PRESETS) if (p[0] == n) p])
+    len(hits) == 1 ? hits[0] : undef;
 CELL_NAMES = [for (p = CELL_PRESETS) p[0]];

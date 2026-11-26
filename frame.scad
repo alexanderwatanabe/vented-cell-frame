@@ -83,7 +83,7 @@ BAND_H = 5; // [2:0.5:30]
 END_CLR = 1; // [0:0.5:20]
 
 /* [View] */
-VIEW = "part"; // [part, inplace, top]
+VIEW = "part"; // [part, inplace, top, none]
 
 include <lib/grip.scad>
 
@@ -216,26 +216,34 @@ function face_out(w, u, z) = out_r(plan_wave(u), big_bump(u), w[3] + u, z);
 // t runs 0 to 1 from the end of the wall before (its outside facing a0) to the start of the wall after.
 function corner_s(w, t, r0, r1) = let(m0 = r0 * PI / 2 / CORNER_S, m1 = r1 * PI / 2 / CORNER_S)
     w[3] - CORNER_S + CORNER_S * (t + (m0 - 1) * (t - 2 * t * t + t * t * t) + (m1 - 1) * (t * t * t - t * t));
-function corner_r(w, t, z, outside) = let(
-    f = function(s) outside ? out_r(0, 1, s, z) : face_r(0, s, z),
-    tt = max(0, min(1, t)))
-    f(corner_s(w, tt, f(w[3] - CORNER_S), f(w[3])));
 CORNER_T = [for (j = [-1:CORNER_N + 1]) j / CORNER_N];   // a step past each end, over the walls' own ground
 GRID_Z = [for (k = [0:ceil(FRAME_L / Z_STEP)]) min(FRAME_L, k * Z_STEP)];
+// Each corner's face, worked out once for the checks and the polyhedron: CORNER_FACES[outside][wall][k][j] is its
+// radius at GRID_Z[k] and CORNER_T[j]. The radii at its two ends depend on z only.
+CORNER_FACES = [for (outside = [false, true]) [for (w = WALLS) [for (z = GRID_Z) let(
+    f = function(s) outside ? out_r(0, 1, s, z) : face_r(0, s, z),
+    r0 = f(w[3] - CORNER_S), r1 = f(w[3]))
+    [for (t = CORNER_T) f(corner_s(w, max(0, min(1, t)), r0, r1))]]]];
+function corner_faces(wi, outside) = CORNER_FACES[outside ? 1 : 0][wi];
 function grid_u(len) = [for (i = [0:ceil(len / U_STEP)]) min(len, i * U_STEP)];
+// The walls' pattern repeats every two cells along them: the plan wave every cell, and the section wave shifts half a
+// period from one cell to the next. So the checks on the walls sample one repeat, s over [0, 2P), as the ties and the
+// columns do; the corners, each with its own run of the wave, are sampled whole.
+PATTERN_S = [for (i = [0:ceil(2 * P / U_STEP) - 1]) i * U_STEP];
+function face_at(s, z, outside) = outside ? out_r(plan_wave(s), big_bump(s), s, z) : face_r(plan_wave(s), s, z);
 // The steepest the faces lean from vertical, walls and corners: the print's overhang. The outside overhangs too where
 // it leans out going up.
 function steepest(outside) = max(concat(
-    [for (w = WALLS, u = grid_u(w[2]), k = [0:len(GRID_Z) - 2]) let(f = function(z) outside ? face_out(w, u, z) : face_wall(w, u, z))
-        abs(f(GRID_Z[k + 1]) - f(GRID_Z[k])) / (GRID_Z[k + 1] - GRID_Z[k])],
-    [for (w = WALLS, t = CORNER_T, k = [0:len(GRID_Z) - 2])
-        abs(corner_r(w, t, GRID_Z[k + 1], outside) - corner_r(w, t, GRID_Z[k], outside)) / (GRID_Z[k + 1] - GRID_Z[k])]));
+    [for (s = PATTERN_S, k = [0:len(GRID_Z) - 2])
+        abs(face_at(s, GRID_Z[k + 1], outside) - face_at(s, GRID_Z[k], outside)) / (GRID_Z[k + 1] - GRID_Z[k])],
+    [for (wi = [0:3], k = [0:len(GRID_Z) - 2], j = [0:len(CORNER_T) - 1]) let(c = corner_faces(wi, outside))
+        abs(c[k + 1][j] - c[k][j]) / (GRID_Z[k + 1] - GRID_Z[k])]));
 STEEPEST = steepest(false);
 STEEPEST_OUT = steepest(true);
-// How much of the walls between the bands is open: where the inner wave passes the datum.
-OPEN_FRACTION = OPEN_SPAN[1] <= OPEN_SPAN[0] ? 0 : let(zs = [for (z = GRID_Z) if (z > OPEN_SPAN[0] && z < OPEN_SPAN[1]) z],
-    pts = [for (w = WALLS, u = grid_u(w[2])) if (u >= 0 && u <= w[2]) [w, u]])
-    len([for (p = pts, z = zs) if (face_wall(p[0], p[1], z) > DATUM) 1]) / (len(pts) * len(zs));
+// How much of the walls between the bands is open, over one repeat of the pattern: where the inner wave passes the
+// datum.
+OPEN_FRACTION = OPEN_SPAN[1] <= OPEN_SPAN[0] ? 0 : let(zs = [for (z = GRID_Z) if (z > OPEN_SPAN[0] && z < OPEN_SPAN[1]) z])
+    len([for (s = PATTERN_S, z = zs) if (face_r(plan_wave(s), s, z) > DATUM) 1]) / (len(PATTERN_S) * len(zs));
 
 // The ties: along each of the plan wave's trough lines on a wall, where the openings fall, the solid between two
 // openings one above the other. Each run of solid that has an opening below and above it is a tie.
@@ -267,8 +275,8 @@ for (b = BANDS) assert(b[0] >= 0 && b[1] <= FRAME_L, "a band of bows runs past t
 assert(PLAN_WEIGHT >= 0 && PLAN_WEIGHT <= 1, "PLAN_WEIGHT is a share, 0 to 1");
 assert(abs(PHASE_STEP * ROUND_S / P - round(PHASE_STEP * ROUND_S / P)) < 1e-6,
     "the section wave's shift doesn't close round the frame: it would meet itself out of step at a corner");
-assert(min([for (w = WALLS, z = GRID_Z, o = [false, true]) corner_r(w, 0, z, o) * PI / 2 / CORNER_S]) > 0
-    && max([for (w = WALLS, z = GRID_Z, o = [false, true]) corner_r(w, 0, z, o) * PI / 2 / CORNER_S]) < 3,
+CORNER_PACE = [for (o = [false, true], wi = [0:3], c = corner_faces(wi, o)) c[1] * PI / 2 / CORNER_S];   // at t = 0
+assert(min(CORNER_PACE) > 0 && max(CORNER_PACE) < 3,
     "a corner's arc is so far from CORNER_S long that the wave would run back on itself round it");
 assert(len(BANDS) < 2 || OPEN_SPAN[1] - OPEN_SPAN[0] > 2 * RAMP, str("the frame is too short for its wave: ",
     OPEN_SPAN[1] - OPEN_SPAN[0], " mm between the bands' blends, under the ", 2 * RAMP, " its ramps take"));
@@ -276,9 +284,7 @@ assert(STEEPEST <= SLOPE_MAX, str("the wave leans ", atan(STEEPEST), " degrees: 
 assert(CREST_IN > P / 2 - ARM_TIP_W, "a crest reaches so far in it closes the gap between two cells");
 assert(STEEPEST_OUT <= SLOPE_MAX, str("the outside leans ", atan(STEEPEST_OUT), " degrees: past 45 it would need support"));
 assert(TROUGH > DATUM, "the wave never passes the datum: the wall never opens");
-assert(len(BANDS) < 2 || OPEN_FRACTION > 0, str("the wall never opens: the wave, ", OPEN_SPAN[1] - OPEN_SPAN[0],
-    " mm between the bands' blends, is too short to reach the datum"));
-assert(len(BANDS) < 2 || OPEN_FRACTION == 0 || OPEN_FRACTION >= OPEN_MIN, str("only ", OPEN_FRACTION,
+assert(len(BANDS) < 2 || (OPEN_FRACTION > 0 && OPEN_FRACTION >= OPEN_MIN), str("only ", OPEN_FRACTION,
     " of the wall opens, under OPEN_MIN ", OPEN_MIN, ": the frame is too short for whole vents"));
 assert(REFLECT >= 0 && REFLECT <= 1, "REFLECT is a share, 0 to 1");
 assert(abs(P / PLAN_L - round(P / PLAN_L)) < 1e-6, "PLAN_L must divide the pitch, so every cell's middle is a crest");
@@ -321,11 +327,11 @@ module corners_2d(r) union() { plus_2d(); for (w = WALLS) translate(w[0]) circle
 // The solid inside a corner's face: from the corner cell's axis out to the face, over the quarter turn and a step past
 // each end, where the frame is the walls' (plus_2d) anyway. Faces are listed anticlockwise from outside, then
 // reversed: OpenSCAD wants them clockwise.
-module corner(w, outside) let(nt = len(CORNER_T), nz = len(GRID_Z), a0 = w[1] - 180,
+module corner(wi, outside) let(w = WALLS[wi], c = corner_faces(wi, outside), nt = len(CORNER_T), nz = len(GRID_Z), a0 = w[1] - 180,
     zz = function(k) k == 0 ? -0.01 : k == nz - 1 ? FRAME_L + 0.01 : GRID_Z[k],
     f = function(j, k) j + k * nt, ax = function(k) nt * nz + k)
     translate(w[0]) polyhedron(
-        points = concat([for (k = [0:nz - 1], t = CORNER_T) let(r = corner_r(w, t, GRID_Z[k], outside), a = a0 + 90 * t)
+        points = concat([for (k = [0:nz - 1], j = [0:nt - 1]) let(r = c[k][j], a = a0 + 90 * CORNER_T[j])
                 [r * cos(a), r * sin(a), zz(k)]],
             [for (k = [0:nz - 1]) [0, 0, zz(k)]]),
         faces = [for (q = concat(
@@ -336,7 +342,7 @@ module corner(w, outside) let(nt = len(CORNER_T), nz = len(GRID_Z), a0 = w[1] - 
             [concat([ax(nz - 1)], [for (j = [0:nt - 1]) f(j, nz - 1)])])) [for (i = [len(q) - 1:-1:0]) q[i]]]);
 module corners(outside) union() {
     translate([0, 0, -1]) linear_extrude(FRAME_L + 2) plus_2d();
-    for (w = WALLS) corner(w, outside);
+    for (wi = [0:3]) corner(wi, outside);
 }
 module inside_wall(w, outside = false) let(len = w[2], us = concat([-FAR], grid_u(len), [len + FAR]), nu = len(us), nz = len(GRID_Z),
     zz = function(k) k == 0 ? -0.01 : k == nz - 1 ? FRAME_L + 0.01 : GRID_Z[k],

@@ -59,10 +59,9 @@ def test_small_cells_take_the_wall_grip_with_a_full_bow(tmp_path):
     (dict(PLAN_WEIGHT=1.5), "PLAN_WEIGHT is a share"),
     (dict(NC=8), "bigger than the printer"),
     (dict(CELL_L=50), "too short for its wave"),
-    (dict(CELL_L=55, NC=2, NR=2), "the wall never opens"),
-    (dict(CELL_L=58), "the frame is too short for whole vents"),
+    (dict(CELL_L=56), "the frame is too short for whole vents"),
     (dict(GRIP='"none"'), "GRIP is auto, gap or wall"),
-], ids=["steep", "closed", "plan-weight", "printer", "short", "no-vents", "slivers", "grip-name"])
+], ids=["steep", "closed", "plan-weight", "printer", "short", "slivers", "grip-name"])
 def test_frame_refuses(tmp_path, overrides, refusal):
     ok, text = evaluate(tmp_path, "frame", **{**TESTED, **overrides})
     assert not ok and refusal in text
@@ -102,3 +101,10 @@ def test_a_custom_cell_is_drawn_from_its_size(tmp_path):
     ok, text = evaluate(tmp_path, "frame", CELL='"custom"', CELL_D=20, CELL_L=70)
     assert ok, text
     assert echoed(text, "FRAME")["pitch"] == pytest.approx(20.8)
+
+
+def test_a_preset_named_as_a_number_is_found(tmp_path):
+    # the Customizer's dropdown hands numeric-looking names over as numbers
+    ok, text = evaluate(tmp_path, "frame", CELL=18650, VIEW='"none"')
+    assert ok, text
+    assert echoed(text, "FRAME")["body"] == [18.5, 65]

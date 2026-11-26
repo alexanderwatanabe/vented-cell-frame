@@ -44,7 +44,9 @@ CELL_PRESETS = [
 {rows}
 ];
 
-function cell_preset(name) = let(hits = [for (p = CELL_PRESETS) if (p[0] == name) p]) len(hits) == 1 ? hits[0] : undef;
+// The Customizer reads a dropdown's numeric-looking names (18650) as numbers, so a name may arrive as either.
+function cell_preset(name) = let(n = is_num(name) ? str(name) : name, hits = [for (p = CELL_PRESETS) if (p[0] == n) p])
+    len(hits) == 1 ? hits[0] : undef;
 CELL_NAMES = [for (p = CELL_PRESETS) p[0]];
 """
 

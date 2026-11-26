@@ -110,9 +110,9 @@ Presets live in `presets/cells.json`. After editing that file, run `uv run tools
 Every row is a starting point: check it against the datasheet of the cells you have. 18650 is the smallest cell
 supported. A custom cell smaller than that is drawn if it passes the asserts, but it is untested.
 
-The frame needs a cell about 62–66 mm long or more, depending on the diameter and the grip. A shorter frame leaves
-room between its bands for no more than slivers of vent, and is refused (`OPEN_MIN`). The 65 mm cells are just
-inside the limit, with one line of contact each. 18350, 18500 and sub-C cells are too short.
+The frame needs a cell about 52–58 mm long or more, depending on the diameter and the grip. A shorter frame leaves
+room between its bands for no more than slivers of vent, and is refused (`OPEN_MIN`). The 65 mm cells clear it, with
+one line of contact each. 18350, 18500 and sub-C cells are too short.
 
 ## What the asserts refuse
 

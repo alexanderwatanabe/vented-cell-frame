@@ -48,7 +48,7 @@ LAND_CLR = 0.2; // [0:0.05:1]
 /* [Spacer] */
 // mm, the spacer's length along the cells: its lands far apart, so it can't rock
 H = 18; // [6:1:60]
-VIEW = "part"; // [part, inplace, top]
+VIEW = "part"; // [part, inplace, top, none]
 
 include <lib/grip.scad>
 
