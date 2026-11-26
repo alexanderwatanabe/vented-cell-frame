@@ -9,6 +9,8 @@ A printable frame for a block of cylindrical cells (18650 to 66160), drawn in Op
   wave's troughs are channels the warm air rises through.
 - **It prints standing, without supports.** Asserts hold every face under 45°.
 
+![The configurator, with a 4 × 6 frame of 21700 cells](docs/configurator.png)
+
 The cells inside the block are held by loose **gap spacers** (`spacer.scad`), one in each diagonal gap near each end.
 
 The frame does not touch the cells' ends. It stops 1 mm short of each end face, so terminals, busbars and nickel
@@ -38,8 +40,17 @@ and grip as the frame you'll print (pass them with `-D`), because the coupon is 
 
 There are three ways to set it up:
 
-- **The configurator.** `configurator/` is a page that runs OpenSCAD in your browser. It shows the derived sizes and
-  any refusal as you change values, and renders and downloads the STL.
+- **The configurator.** `configurator/` is a page that runs OpenSCAD in your browser: it checks each change as you
+  make it, showing what the design works out to (pitch, footprint, grip, vent area, steepest face) or why it is
+  refused, and renders the frame, a coupon set or a spacer to view and download. Serve the repository and open it:
+
+  ```sh
+  python3 -m http.server 8000      # from the repository's root
+  # then open http://localhost:8000/configurator/
+  ```
+
+  A coupon set renders in about 4 s; a 4 × 6 frame of 21700s in about 25 s, and of 33140s in about 80 s. The page loads OpenSCAD (WebAssembly, from
+  the `openscad-playground` package) and three.js from jsDelivr, so it needs a network connection.
 - **OpenSCAD's Customizer.** Open `frame.scad` in OpenSCAD, show the Customizer (Window → Customizer) and set
   values there.
 - **The command line:**
@@ -130,6 +141,7 @@ A design that breaks a rule stops with a message rather than drawing an unprinta
 ```sh
 uv run pytest                        # finds OpenSCAD from $OPENSCAD, PATH, or /Applications
 uv run tools/gen_cells.py --check    # the generated preset files match presets/cells.json
+uv run tools/gen_params.py           # after changing a part's Customizer inputs
 ```
 
 | Path | What it is |
@@ -139,10 +151,13 @@ uv run tools/gen_cells.py --check    # the generated preset files match presets/
 | `lib/cells.scad` | Generated presets. |
 | `presets/cells.json` | The presets' one source. |
 | `tools/` | The coupon set, the generator, the OpenSCAD finder. |
-| `configurator/` | The browser page. |
+| `configurator/` | The browser page; `params.json` is its form, generated from the parts by `tools/gen_params.py`. |
 | `tests/` | Headless checks of every part and preset. |
 
 ## Licence
 
 CERN Open Hardware Licence Version 2, Strongly Reciprocal (`CERN-OHL-S-2.0`); see `LICENSE`. If you distribute a
 modified design, or parts made from one, publish your modified source under the same licence.
+
+The configurator bundles Noto Sans (`configurator/fonts/`, SIL Open Font License 1.1, see `OFL.txt`) for the coupons'
+labels. It loads OpenSCAD, which is GPL-2.0-or-later, at run time; OpenSCAD is not part of this repository.

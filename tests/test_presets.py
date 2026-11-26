@@ -53,3 +53,9 @@ def test_preset_spacer(tmp_path, name):
 def test_generated_files_match_the_presets():
     run = subprocess.run([sys.executable, str(ROOT / "tools/gen_cells.py"), "--check"], text=True, capture_output=True)
     assert run.returncode == 0, run.stdout + run.stderr
+
+
+@needs_openscad
+def test_the_configurators_form_matches_the_parts():
+    run = subprocess.run([sys.executable, str(ROOT / "tools/gen_params.py"), "--check"], text=True, capture_output=True)
+    assert run.returncode == 0, run.stdout + run.stderr

@@ -1,0 +1,121 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: CERN-OHL-S-2.0 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vented cell frame</title>
+<link rel="icon" href="data:,">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+  :root {
+    --bg: #f6f5f2; --panel: #ffffff; --ink: #1d1d1b; --muted: #65635d; --line: #dedbd3;
+    --accent: #c4600f; --ok: #2f7d4f; --bad: #b3261e; --pending: #8a6d1f; --field: #fbfaf8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161614; --panel: #1f1f1c; --ink: #ecebe6; --muted: #a5a39b; --line: #36352f;
+      --accent: #f08a3a; --ok: #6cc391; --bad: #f08a80; --pending: #e0c060; --field: #262622;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161614; --panel: #1f1f1c; --ink: #ecebe6; --muted: #a5a39b; --line: #36352f;
+    --accent: #f08a3a; --ok: #6cc391; --bad: #f08a80; --pending: #e0c060; --field: #262622;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 18px; margin: 0; font-weight: 650; }
+  #parts { display: flex; gap: 4px; }
+  #parts button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 6px 12px; border-radius: 6px; cursor: pointer; font: inherit; }
+  #parts button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  header .spacer { flex: 1; }
+  header a { color: var(--muted); font-size: 13px; }
+  main { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; min-height: calc(100vh - 60px); }
+  #form { border-right: 1px solid var(--line); padding: 8px 16px 40px; overflow-y: auto; max-height: calc(100vh - 60px); }
+  .group { border-bottom: 1px solid var(--line); padding: 6px 0; }
+  .group summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+  .field { display: grid; grid-template-columns: 1fr 120px; gap: 2px 10px; align-items: center; padding: 6px 0 6px 8px; border-left: 3px solid transparent; }
+  .field.set { border-left-color: var(--accent); }
+  .field .name { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; }
+  .field .help, .field .note { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; }
+  .field .note { color: var(--ink); }
+  .field a { color: var(--accent); }
+  input, select { width: 100%; font: inherit; font-size: 14px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--field); color: var(--ink); }
+  input::placeholder { color: var(--muted); }
+  #reset { margin-top: 12px; }
+  section.out { padding: 16px 20px; display: grid; grid-template-rows: auto auto 1fr; gap: 14px; min-width: 0; }
+  #check { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); }
+  #check strong { display: block; }
+  #check[data-status="ok"] { border-color: var(--ok); }
+  #check[data-status="ok"] strong { color: var(--ok); }
+  #check[data-status="ok"] strong::before { content: "✓ "; }
+  #check[data-status="refused"], #check[data-status="failed"] { border-color: var(--bad); }
+  #check[data-status="refused"] strong, #check[data-status="failed"] strong { color: var(--bad); }
+  #check[data-status="refused"] strong::before, #check[data-status="failed"] strong::before { content: "✕ "; }
+  #check[data-status="pending"] strong { color: var(--pending); }
+  #check[data-status="pending"] strong::before { content: "◌ "; display: inline-block; animation: spin 1.2s linear infinite; }
+  #check ul { margin: 6px 0 0; padding-left: 20px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .results { display: grid; grid-template-columns: minmax(240px, 320px) 1fr; gap: 16px; min-height: 0; }
+  #derived { border-collapse: collapse; width: 100%; align-self: start; font-variant-numeric: tabular-nums; }
+  #derived th { text-align: left; font-weight: 400; color: var(--muted); padding: 3px 8px 3px 0; }
+  #derived td { text-align: right; padding: 3px 0; }
+  #derived.stale { opacity: 0.45; }
+  .stage { display: grid; grid-template-rows: auto 1fr; gap: 8px; min-height: 420px; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .bar button { font: inherit; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
+  .bar button.quiet, #reset { background: transparent; color: var(--ink); border-color: var(--line); font: inherit; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+  .bar button:disabled { opacity: 0.4; cursor: default; }
+  #render-status { color: var(--muted); font-size: 13.5px; }
+  #render-status[data-status="failed"] { color: var(--bad); }
+  #render-status[data-status="done"] { color: var(--ok); }
+  #stale-note { color: var(--pending); font-size: 13.5px; }
+  #viewer { position: relative; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); min-height: 380px; overflow: hidden; }
+  #viewer canvas { display: block; width: 100%; height: 100%; position: absolute; inset: 0; }
+  #viewer.stale canvas { opacity: 0.45; }
+  @media (prefers-reduced-motion: reduce) { #check[data-status="pending"] strong::before { animation: none; } }
+  @media (max-width: 860px) {
+    main { grid-template-columns: 1fr; }
+    #form { border-right: 0; border-bottom: 1px solid var(--line); max-height: none; }
+    .results { grid-template-columns: 1fr; }
+    section.out { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Vented cell frame</h1>
+  <nav id="parts" aria-label="Part"></nav>
+  <span class="spacer"></span>
+  <a href="../README.md">README: print the coupon set first</a>
+</header>
+<main>
+  <form id="form" autocomplete="off" onsubmit="return false"></form>
+  <section class="out">
+    <div id="check" data-status="pending" role="status" aria-live="polite"><strong>Loading OpenSCAD…</strong></div>
+    <div class="results">
+      <table id="derived" aria-label="What the design works out to"></table>
+      <div class="stage">
+        <div class="bar">
+          <button id="render" type="button">Render STL</button>
+          <button id="download" type="button" class="quiet" disabled>Download STL</button>
+          <span id="render-status" role="status"></span>
+          <span id="stale-note" hidden>The view is of an earlier setting: render again.</span>
+        </div>
+        <div id="viewer" aria-label="3D view of the rendered part"></div>
+      </div>
+    </div>
+  </section>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
