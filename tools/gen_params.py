@@ -17,7 +17,7 @@ from openscad import ROOT, find_openscad  # noqa: E402
 
 OUT = ROOT / "configurator/params.json"
 PARTS = ["frame", "spacer"]
-SKIP = {"VIEW"}   # the configurator sets it
+SKIP = {"VIEW", "PART"}   # the configurator sets these: its steps choose the part
 
 
 def export(openscad, part):

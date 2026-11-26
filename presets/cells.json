@@ -1,29 +1,77 @@
 {
-  "about": "Cylindrical cell presets: body diameter and length (end face to end face), mm. The diameter is the datasheet's nominal where it gives one, else its maximum. Cells of one format differ by maker and sleeve: check the datasheet of the cells in hand. Edit this file, then run tools/gen_cells.py.",
+  "about": "Cylindrical cell presets: body diameter and length (end face to end face), mm. The diameter is the datasheet's nominal where it gives one, else its maximum. Cells of one format differ by maker and sleeve: check the datasheet of the cells in hand. Edit this file, then run tools/gen_cells.py. 'verified' is true once a row is checked against a real cell.",
   "cells": [
-    {"name": "18650", "d": 18.5, "l": 65, "verify": true,
-     "basis": "Samsung INR18650-35E: max 18.55 x 65.25 overall",
-     "source": "https://cdn.shopify.com/s/files/1/0613/3327/4870/files/35eDatasheet.pdf"},
-    {"name": "21700", "d": 21.2, "l": 70, "verify": true,
-     "basis": "Samsung INR21700-50E: max 21.25 x 70.8, sleeved",
-     "source": "https://static.rapidonline.com/pdf/10-5180_v1.pdf"},
-    {"name": "26650", "d": 26.0, "l": 65, "verify": true,
-     "basis": "A123 ANR26650M1-B: 25.96 sleeved x 65.15; other makers run to 26.5",
-     "source": "https://bto.pl/files/Karty%20katalogowe/a123%20datasheet_26650m1b.pdf"},
-    {"name": "32650", "d": 32.3, "l": 65, "verify": true,
-     "basis": "no datasheet found", "source": null},
-    {"name": "32700", "d": 32.4, "l": 70.5, "verify": true,
-     "basis": "LiFePO4 32700 6 Ah (HX-TS-066): 32.4 +-0.3 sleeved x 70.5 +0.4/-0.3",
-     "source": "https://rcscomponents.kiev.ua/datasheets/HX-TS-066_32700.pdf"},
-    {"name": "33140", "d": 33.3, "l": 140.5, "verify": true,
-     "basis": "IFR33140 15 Ah: 33.3 +-0.2 x 140.5 +-0.5; fit-tested: a 33.2 fit (FIT_OFFSET -0.1)",
-     "source": "https://www.rcscomponents.kiev.ua/datasheets/IFR33140_C33.pdf"},
-    {"name": "40135", "d": 40.2, "l": 135, "verify": true,
-     "basis": "no datasheet found", "source": null},
-    {"name": "4680", "d": 46, "l": 80, "verify": true,
-     "basis": "nominal, from teardowns; no datasheet published", "source": null},
-    {"name": "66160", "d": 66, "l": 160, "verify": true,
-     "basis": "Yinlong LTO 66160 40 Ah: 66 +-1 x 161 +-1 (whether 161 includes the studs is unclear)",
-     "source": "https://akkudoktor.net/uploads/short-url/7z7F1IhRYdLJHxtDF272lAQIx4q.pdf"}
+    {
+      "name": "18650",
+      "diameter": 18.5,
+      "length": 65,
+      "verified": false,
+      "basis": "Samsung INR18650-35E: max 18.55 x 65.25 overall",
+      "datasheet": "https://cdn.shopify.com/s/files/1/0613/3327/4870/files/35eDatasheet.pdf"
+    },
+    {
+      "name": "21700",
+      "diameter": 21.2,
+      "length": 70,
+      "verified": false,
+      "basis": "Samsung INR21700-50E: max 21.25 x 70.8, sleeved",
+      "datasheet": "https://static.rapidonline.com/pdf/10-5180_v1.pdf"
+    },
+    {
+      "name": "26650",
+      "diameter": 26.0,
+      "length": 65,
+      "verified": false,
+      "basis": "A123 ANR26650M1-B: 25.96 sleeved x 65.15; other makers run to 26.5",
+      "datasheet": "https://bto.pl/files/Karty%20katalogowe/a123%20datasheet_26650m1b.pdf"
+    },
+    {
+      "name": "32650",
+      "diameter": 32.3,
+      "length": 65,
+      "verified": false,
+      "basis": "no datasheet found",
+      "datasheet": null
+    },
+    {
+      "name": "32700",
+      "diameter": 32.4,
+      "length": 70.5,
+      "verified": false,
+      "basis": "LiFePO4 32700 6 Ah (HX-TS-066): 32.4 +-0.3 sleeved x 70.5 +0.4/-0.3",
+      "datasheet": "https://rcscomponents.kiev.ua/datasheets/HX-TS-066_32700.pdf"
+    },
+    {
+      "name": "33140",
+      "diameter": 33.3,
+      "length": 140.5,
+      "verified": false,
+      "basis": "IFR33140 15 Ah: 33.3 +-0.2 x 140.5 +-0.5; fit-tested: a 33.2 fit (FIT_OFFSET -0.1)",
+      "datasheet": "https://www.rcscomponents.kiev.ua/datasheets/IFR33140_C33.pdf"
+    },
+    {
+      "name": "40135",
+      "diameter": 40.2,
+      "length": 135,
+      "verified": false,
+      "basis": "no datasheet found",
+      "datasheet": null
+    },
+    {
+      "name": "4680",
+      "diameter": 46,
+      "length": 80,
+      "verified": false,
+      "basis": "nominal, from teardowns; no datasheet published",
+      "datasheet": null
+    },
+    {
+      "name": "66160",
+      "diameter": 66,
+      "length": 160,
+      "verified": false,
+      "basis": "Yinlong LTO 66160 40 Ah: 66 +-1 x 161 +-1 (whether 161 includes the studs is unclear)",
+      "datasheet": "https://akkudoktor.net/uploads/short-url/7z7F1IhRYdLJHxtDF272lAQIx4q.pdf"
+    }
   ]
 }

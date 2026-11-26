@@ -1,12 +1,13 @@
 # Vented cell frame
 
-A printable frame for a block of cylindrical cells, from 18650 to 66160. Choose a cell and how many cells across and
-deep, and you get an open-ended box the cells stand in, running their full length:
+A printable frame for a block of cylindrical cells, from 18650 to 66160. Choose a cell and how many columns and rows
+of them, and you get an open-ended box the cells stand in, running their full length:
 
 - **It grips every edge cell** with printed bow springs in a band near each end.
 - **Its walls are vented.** Between the bands, each wall is a wave that touches each cell along a few lines and opens
   into a pattern of vents, so the frame doesn't trap the cells' heat.
-- **It prints standing, without supports.** Every face is held under 45°.
+- **It prints standing, without supports.** The walls' faces are held at 45° or less, and every vent's top narrow
+  enough to bridge.
 
 Loose **gap spacers** hold the cells inside the block, one in each diagonal gap near each end. The frame stops 1 mm
 short of each end of the cells, so terminals, busbars and nickel strip stay clear.
@@ -42,14 +43,15 @@ short of each end of the cells, so terminals, busbars and nickel strip stay clea
    - **too tight:** you can't push it in by hand.
 
    If none is right, print another set centred on the closest one, with a finer step.
-3. **Step 2, Frame.** Enter the best coupon's offset as **Fit offset**, and set **Cells across** and **Cells deep**.
+3. **Step 2, Frame.** Enter the best coupon's offset as **Fit offset**, and set **Cell columns** and **Cell rows**.
    Shape the vents if you like: the wall map redraws as you go. The page tells you if a setting can't be printed,
    and what to change. Press **Render frame**, then **Download**, and print it.
 4. **Step 3, Spacers.** Render a spacer and print as many as the page says your block needs, for the cells inside
    the block. Small cells packed tightly (18650, 21700) have no room for spacers unless you widen the gap between
    cells.
 
-A coupon set renders in about 4 s. A 4 × 6 frame takes about 25 s for 21700s, and about 80 s for 33140s.
+A coupon set renders in about 4 s, and a 4 × 6 frame of 21700s in about 25 s; frames of larger cells take a minute or
+two.
 
 ## In OpenSCAD: the Customizer
 
@@ -57,15 +59,17 @@ Install an OpenSCAD development snapshot from 2024 or later
 (<https://openscad.org/downloads.html#snapshots>): it has the Manifold engine, which renders a frame in seconds.
 OpenSCAD 2021.01 can check a design, but takes hours to render one.
 
-Download this repository, open `coupon.scad`, `frame.scad` or `spacer.scad`, and show the Customizer (Window →
-Customizer). Every setting is there under the same name and explanation as in the page. Render with F6, then export
-the STL with F7. Do the coupon first, as in the page. `coupon.scad` makes one coupon at the fit offset you set, so set
-a few offsets in turn.
+Download this repository, open `frame.scad` or `spacer.scad`, and show the Customizer (Window → Customizer). Every
+setting is there with the same label and explanation as in the page. Render with F6, then export the STL with F7.
+
+Do the coupon first, as in the page: in `frame.scad`, set **Part** to `coupon`. It makes one coupon at the fit offset
+you set, so render a few offsets in turn.
 
 ## On the command line
 
 ```sh
-openscad --backend=manifold -o frame.stl -D 'CELL="21700"' -D NC=5 -D NR=4 -D FIT_OFFSET=0.1 frame.scad
+openscad --backend=manifold -o frame.stl -D 'CELL="21700"' -D CELL_COLUMNS=5 -D CELL_ROWS=4 -D FIT_OFFSET=0.1 frame.scad
+openscad --backend=manifold -o coupon.stl -D 'PART="coupon"' -D 'CELL="21700"' -D FIT_OFFSET=0.1 frame.scad
 openscad --backend=manifold -o spacer.stl -D 'CELL="21700"' -D CELL_GAP=2 spacer.scad
 ```
 
@@ -86,18 +90,19 @@ The settings most builds change:
 | Setting | Name | What it sets |
 |---|---|---|
 | Cell | `CELL` | A preset (below), or `"custom"` with `CELL_D` and `CELL_L`. |
-| Cells across, cells deep | `NC`, `NR` | The block. |
+| Cell columns, cell rows | `CELL_COLUMNS`, `CELL_ROWS` | The block. |
 | Fit offset | `FIT_OFFSET` | From the coupon set. |
 | Gap between cells | `CELL_GAP` | Between neighbouring cells' bodies: 0.8 mm is the closest the printed holes allow. |
 | Pitch | `PITCH` | Centre to centre, overriding diameter + gap: set it when your busbars or nickel strip fix it. |
 | Grip | `GRIP` | `auto`, `gap` or `wall`; see [the grip](#the-grip). |
-| Printer size | `PRINT_MAX` | Your printer's build volume, its smallest side. Default 270 mm (Snapmaker U1). |
+| Printer size | `PRINTER_SIZE` | Your printer's build volume, its smallest side. Default 270 mm (Snapmaker U1). |
+| Part | `PART` | `frame`, or `coupon` for the calibration coupon. |
 
 ## Editing the design
 
 | Path | What it is |
 |---|---|
-| `frame.scad`, `spacer.scad`, `coupon.scad` | The parts, each with its inputs in Customizer sections at the top. |
+| `frame.scad`, `spacer.scad` | The parts, each with its inputs in Customizer sections at the top. `frame.scad` also draws the coupon (`PART`). |
 | `lib/grip.scad` | The bow spring and its pocket, and the cell size and pitch they follow from. |
 | `presets/cells.json` | The cell presets: the one place to add or correct a cell. |
 | `lib/cells.scad` | The presets for OpenSCAD, generated from `presets/cells.json`. |
@@ -106,7 +111,7 @@ The settings most builds change:
 | `tools/` | The coupon set, the generators, the page's build, the OpenSCAD finder. |
 | `tests/` | Headless checks of every part, preset and refusal. |
 
-Every number in the parts is a named input with its reason, or follows from one; every rule is an assert. After
+Every dimension in the parts is a named input with its reason, or follows from one; every rule is an assert. After
 changing something, regenerate what follows from it and run the tests:
 
 ```sh
@@ -137,6 +142,9 @@ only sets where the spring sits.
 At the default gap, 18650 and 21700 take the wall grip. Their diagonal gaps hold only a 2.5–3.7 mm bow, too short to
 spring.
 
+**Bow press** (`BOW_PRESS`) is how far the bows' faces stand inside the cell at their middle, on diameter: 1.0 mm by
+default, as tested. It is measured at the face, so changing the bow's thickness for another nozzle doesn't change it.
+
 **Tested:** the gap grip with an 8 mm bow, on a 33140 cell at a 34 mm pitch. The wall grip, and gap bows shorter than
 8 mm (the 26650's is 5.6 mm), are untested. The coupon set is the test, so print it first.
 
@@ -149,13 +157,18 @@ wherever the inside passes it.
 | Setting | What it changes |
 |---|---|
 | Waves per cell (`WAVES_PER_CELL`) | How many waves run along the wall per cell. More waves give narrower vents and more of them. |
-| Vent shape (`ALONG_SHARE`) | How the depth is split between the two waves. 0.5 gives round, staggered vents; toward 0.7, the vents join into tall slots; below about 0.35, the columns between vents get too thin. |
-| Wave height (`UP_WAVELENGTH`) | How far apart the up-the-frame wave's crests stand: shorter for more, shorter vents, longer for fewer, taller ones. Each crest is a line where the wall touches the cell. |
-| Trough depth (`CHANNEL`) | How deep the troughs are: deeper troughs open bigger vents and leave wider air channels beside the cells. |
+| Along share (`ALONG_SHARE`) | How the depth is split between the two waves. 0.5 gives round, staggered vents; toward 0.7, the vents join into tall slots; below about 0.35, the columns between vents get too thin. |
+| Wave spacing (`UP_WAVELENGTH`) | How far apart the up-the-frame wave's crests stand, rounded to fit a whole number between the bands: shorter for more, shorter vents, longer for fewer, taller ones. Each crest is a line where the wall touches the cell. |
+| Trough depth (`TROUGH_DEPTH`) | How deep the troughs are: deeper troughs open bigger vents and leave wider air channels beside the cells. |
 | Crest press (`CREST_PRESS`) | How far the crests press into the cell's land, which sets the size of the contact patches. |
 | Mirror (`MIRROR`) | How far the outside mirrors the inside: 1 is a full mirror; less gives a thicker wall and smaller vents. |
-| Wave position (`UP_PHASE`) | Where the up-the-frame crests fall: 90° spaces the contact lines evenly between the bands, 0° the vents. |
+| Wave phase (`UP_PHASE`) | Where the up-the-frame crests fall: 90° spaces the contact lines evenly between the bands, 0° the vents. |
 | Stagger (`STAGGER`) | How far the pattern shifts from one cell to the next: 0.5 staggers the vents like brick bond, 0 lines them up in rows. |
+
+**Large cells.** With one wave per cell, a vent is about half a pitch wide, so past about 40 mm its top is too wide
+to bridge (`BRIDGE_MAX`, 10 mm by default). Two waves per cell halve it, and a lower Mirror keeps the outside under 45°:
+a 4680 block passes with `WAVES_PER_CELL=2` and `MIRROR=0.75`, a 66160 block with `MIRROR=0.8`. If your printer
+bridges further, raise `BRIDGE_MAX` instead.
 
 ### Cell presets
 
@@ -177,7 +190,7 @@ Every row is a starting point: check it against the datasheet of the cells you h
 <!-- presets:end -->
 
 18650 is the smallest cell supported. A custom cell smaller than that is drawn if it passes the checks, but it is
-untested. The frame needs cells about 52–58 mm long or more, depending on the diameter and the grip: a shorter frame
+untested. The frame needs cells about 52–63 mm long or more, depending on the diameter and the grip: a shorter frame
 has room only for slivers of vent. 18350, 18500 and sub-C cells are too short.
 
 ### What gets refused
@@ -185,11 +198,18 @@ has room only for slivers of vent. 18350, 18500 and sub-C cells are too short.
 A design that breaks a rule stops with a message, rather than drawing a part that can't print or would be weak:
 
 - a face steeper than 45°, which would need support;
-- a tie across the wall shorter than `TIE_MIN`, or a column narrower than `COLUMN_SHARE` of the along-the-wall
+- a tie across the wall shorter than `TIE_MIN`, or a column narrower than `COLUMN_MIN_SHARE` of the along-the-wall
   wavelength (`TIE_MIN` at least);
-- a wall less than `OPEN_MIN` open, or a wave that doesn't close evenly round the frame;
+- vents that run all the way round the frame at some height, which would cut it in two;
+- a vent whose top, 1 mm below it, is wider than `BRIDGE_MAX`: the bridge the printer would have to span;
+- a wall less than `OPEN_SHARE_MIN` open, or a wave that doesn't close evenly round the frame;
 - a frame bigger than the printer, or too short for its vents;
-- a gap grip, or a spacer, where the gap between cells holds no bow.
+- a pitch at which neighbouring cells, or their grips, would overlap;
+- a gap grip, or a spacer, where the gap between cells holds no bow; or a bow shorter than `BOW_SPAN_MIN`;
+- a wall grip whose pockets leave less than `NECK_MIN` of wall behind them.
+
+The checks sample the walls' faces, the vents and the corners on a fine grid; the tests also render each part and
+check that it comes out as one solid of the size it reports.
 
 ### Printing
 

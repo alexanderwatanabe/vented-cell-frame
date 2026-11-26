@@ -83,7 +83,8 @@
   .link { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; }
   @keyframes spin { to { transform: rotate(360deg); } }
   #results { display: grid; gap: 16px; align-content: start; }
-  #results.stale { opacity: 0.45; }
+  #results.stale, #check.stale { opacity: 0.45; }
+  .field.invalid input:not([type="range"]) { border-color: var(--bad); }
   .result h3 { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 4px; }
   .result table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
   .result th { text-align: left; font-weight: 400; color: var(--muted); padding: 3px 8px 3px 0; }

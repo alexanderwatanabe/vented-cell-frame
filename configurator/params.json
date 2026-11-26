@@ -74,7 +74,7 @@
    "type": "number"
   },
   {
-   "caption": "Fit offset (mm) \u2014 how much bigger your printer and cells make the grip need to be: find it with the coupon set",
+   "caption": "Fit offset (mm) \u2014 added to the cell's diameter where the grip is drawn: positive if your coupons were tight, negative if loose",
    "group": "Cell",
    "initial": 0.0,
    "max": 1.0,
@@ -84,7 +84,7 @@
    "type": "number"
   },
   {
-   "caption": "Gap between cells (mm) \u2014 between neighbouring cells' bodies; 0.8 is the closest the printed holes allow",
+   "caption": "Gap between cells (mm) \u2014 between neighbouring cells' bodies; at 0.8 the printed holes round neighbouring cells just meet",
    "group": "Cell",
    "initial": 0.8,
    "max": 10.0,
@@ -94,7 +94,7 @@
    "type": "number"
   },
   {
-   "caption": "Pitch (mm) \u2014 centre to centre, overriding diameter + gap: set it when your busbars or strip fix it; 0 to leave it",
+   "caption": "Pitch (mm) \u2014 centre to centre, overriding diameter + gap: set it when your busbars or nickel strip fix it; 0 to leave it",
    "group": "Cell",
    "initial": 0.0,
    "max": 120.0,
@@ -104,32 +104,32 @@
    "type": "number"
   },
   {
-   "caption": "Cells across \u2014 the block's columns",
+   "caption": "Cell columns \u2014 cells across the block",
    "group": "Block",
    "initial": 4.0,
    "max": 20.0,
    "min": 2.0,
-   "name": "NC",
+   "name": "CELL_COLUMNS",
    "step": 1.0,
    "type": "number"
   },
   {
-   "caption": "Cells deep \u2014 the block's rows",
+   "caption": "Cell rows \u2014 cells deep",
    "group": "Block",
    "initial": 6.0,
    "max": 20.0,
    "min": 2.0,
-   "name": "NR",
+   "name": "CELL_ROWS",
    "step": 1.0,
    "type": "number"
   },
   {
-   "caption": "Printer size (mm) \u2014 the build volume's smallest side: 270 for a Snapmaker U1",
+   "caption": "Printer size (mm) \u2014 the build volume's smallest side, which every side of the part must fit: 270 for a Snapmaker U1",
    "group": "Block",
    "initial": 270.0,
    "max": 1000.0,
    "min": 100.0,
-   "name": "PRINT_MAX",
+   "name": "PRINTER_SIZE",
    "step": 1.0,
    "type": "number"
   },
@@ -155,7 +155,7 @@
    "type": "number"
   },
   {
-   "caption": "Vent shape \u2014 the along-the-wall wave's share of the depth: 0.5 round vents; toward 0.7 tall slots; under 0.35 thin columns",
+   "caption": "Along share \u2014 the along-the-wall wave's share of the depth: 0.5 round vents; toward 0.7 tall slots; under 0.35 thin columns",
    "group": "Vents",
    "initial": 0.5,
    "max": 1.0,
@@ -165,7 +165,7 @@
    "type": "number"
   },
   {
-   "caption": "Wave height (mm) \u2014 how far apart the waves up the frame stand: shorter, more and smaller vents; each crest touches the cells",
+   "caption": "Wave spacing (mm) \u2014 how far apart the waves up the frame stand, rounded to fit: shorter, more and smaller vents",
    "group": "Vents",
    "initial": 25.0,
    "max": 80.0,
@@ -175,7 +175,7 @@
    "type": "number"
   },
   {
-   "caption": "Wave position (degrees) \u2014 where the waves up the frame fall: 90 spaces the contact lines evenly, 0 the vents",
+   "caption": "Wave phase (degrees) \u2014 where the waves up the frame fall: 90 sets the contact lines evenly between the bands, 0 the vents",
    "group": "Vents",
    "initial": 90.0,
    "max": 180.0,
@@ -185,7 +185,7 @@
    "type": "number"
   },
   {
-   "caption": "Stagger \u2014 each cell's shift of the waves up the frame: 0.5 staggers the vents like brick, 0 lines them up in rows",
+   "caption": "Stagger \u2014 each cell's shift of the waves up the frame, in waves: 0.5 staggers the vents like brick; 0 lines them up in rows",
    "group": "Vents",
    "initial": 0.5,
    "name": "STAGGER",
@@ -211,12 +211,12 @@
    "initial": 4.5,
    "max": 10.0,
    "min": 1.0,
-   "name": "CHANNEL",
+   "name": "TROUGH_DEPTH",
    "step": 0.1,
    "type": "number"
   },
   {
-   "caption": "Crest press (mm) \u2014 how far the crests reach into the cells' land, which trims them: the contact patches' size",
+   "caption": "Crest press (mm) \u2014 how far the crests reach past the cells' land, on radius; the land trims them, leaving the contact patches",
    "group": "Vents",
    "initial": 1.0,
    "max": 3.0,
@@ -226,7 +226,7 @@
    "type": "number"
   },
   {
-   "caption": "Mirror \u2014 how far the outside follows the inside's wave: 1 fully, opening the most; less, a thicker wall, smaller vents",
+   "caption": "Mirror \u2014 how far the outside follows the inside's wave, 0 to 1: 1 fully, opening the most; less, a thicker wall, smaller vents",
    "group": "Vents",
    "initial": 1.0,
    "max": 1.0,
@@ -236,7 +236,7 @@
    "type": "number"
   },
   {
-   "caption": "Grip \u2014 where the edge cells' bow springs sit: auto takes the gap between cells where a bow fits, else the wall",
+   "caption": "Grip \u2014 where the edge cells' bow springs sit: auto takes the gap between edge cells where a bow fits, else the wall",
    "group": "Grip",
    "initial": "auto",
    "name": "GRIP",
@@ -257,7 +257,7 @@
    "type": "string"
   },
   {
-   "caption": "Bow length (mm) \u2014 a bow spring's span between its roots: 8 is tested, and the longest drawn",
+   "caption": "Bow span (mm) \u2014 a bow spring's span between its roots: 8 is tested, and the longest drawn",
    "group": "Grip",
    "initial": 8.0,
    "max": 12.0,
@@ -267,7 +267,7 @@
    "type": "number"
   },
   {
-   "caption": "Shortest bow (mm) \u2014 the shortest drawn; shorter, it is too stiff to spring. Untested below 8",
+   "caption": "Shortest bow span (mm) \u2014 the shortest allowed: shorter, it is too stiff to spring. Untested below 8",
    "group": "Grip",
    "initial": 5.0,
    "max": 12.0,
@@ -287,12 +287,12 @@
    "type": "number"
   },
   {
-   "caption": "Bow press (mm) \u2014 how far the bows' middles stand inside the cell, on diameter: more grips harder",
+   "caption": "Bow press (mm) \u2014 how far the bows' faces stand inside the cell at their middle, on diameter: more grips harder",
    "group": "Grip",
-   "initial": 0.1,
-   "max": 1.0,
-   "min": -0.5,
-   "name": "TIP_PRESS",
+   "initial": 1.0,
+   "max": 2.0,
+   "min": 0.1,
+   "name": "BOW_PRESS",
    "step": 0.05,
    "type": "number"
   },
@@ -317,7 +317,7 @@
    "type": "number"
   },
   {
-   "caption": "Thinnest arm tip (mm) \u2014 where an arm between two cells is cut: thinner won't print as a wall",
+   "caption": "Arm tip width (mm) \u2014 where an arm between two cells is cut: thinner won't print as a wall",
    "group": "Grip",
    "initial": 2.0,
    "max": 5.0,
@@ -337,7 +337,7 @@
    "type": "number"
   },
   {
-   "caption": "Shortest tie (mm) \u2014 the solid across the wall between two vents one above the other",
+   "caption": "Shortest tie (mm) \u2014 the solid across the wall between two vents one above the other; columns are never narrower either",
    "group": "Vent limits",
    "initial": 6.0,
    "max": 30.0,
@@ -347,23 +347,33 @@
    "type": "number"
   },
   {
-   "caption": "Narrowest column \u2014 the solid between two vents side by side, as a share of the along-the-wall wavelength",
+   "caption": "Narrowest column (share) \u2014 the solid between two vents side by side, as a share of the along-the-wall wavelength",
    "group": "Vent limits",
    "initial": 0.35,
    "max": 1.0,
    "min": 0.0,
-   "name": "COLUMN_SHARE",
+   "name": "COLUMN_MIN_SHARE",
    "step": 0.01,
    "type": "number"
   },
   {
-   "caption": "Least open \u2014 the share of the wall between the bands that must open: less, and the vents are slivers",
+   "caption": "Least open (share) \u2014 the share of the wall between the bands that must open: less, and the vents are slivers",
    "group": "Vent limits",
    "initial": 0.1,
    "max": 0.5,
    "min": 0.0,
-   "name": "OPEN_MIN",
+   "name": "OPEN_SHARE_MIN",
    "step": 0.01,
+   "type": "number"
+  },
+  {
+   "caption": "Widest vent top (mm) \u2014 a vent's width 1 mm below its top, which the printer has to bridge: keep it to what yours bridges cleanly",
+   "group": "Vent limits",
+   "initial": 10.0,
+   "max": 30.0,
+   "min": 2.0,
+   "name": "BRIDGE_MAX",
+   "step": 0.5,
    "type": "number"
   },
   {
@@ -409,7 +419,7 @@
  ],
  "spacer": [
   {
-   "caption": "Cell \u2014 a preset, or \"custom\" with its diameter and length below",
+   "caption": "Cell \u2014 a preset, or \"custom\" with its diameter below",
    "group": "Cell",
    "initial": "21700",
    "name": "CELL",
@@ -472,17 +482,7 @@
    "type": "number"
   },
   {
-   "caption": "Length (mm) \u2014 the cell's body, end face to end face; 0 takes the preset's",
-   "group": "Cell",
-   "initial": 0.0,
-   "max": 300.0,
-   "min": 0.0,
-   "name": "CELL_L",
-   "step": 0.5,
-   "type": "number"
-  },
-  {
-   "caption": "Fit offset (mm) \u2014 how much bigger your printer and cells make the grip need to be: find it with the coupon set",
+   "caption": "Fit offset (mm) \u2014 added to the cell's diameter where the grip is drawn: positive if your coupons were tight, negative if loose",
    "group": "Cell",
    "initial": 0.0,
    "max": 1.0,
@@ -492,7 +492,7 @@
    "type": "number"
   },
   {
-   "caption": "Gap between cells (mm) \u2014 between neighbouring cells' bodies; 0.8 is the closest the printed holes allow",
+   "caption": "Gap between cells (mm) \u2014 between neighbouring cells' bodies; at 0.8 the printed holes round neighbouring cells just meet",
    "group": "Cell",
    "initial": 0.8,
    "max": 10.0,
@@ -502,7 +502,7 @@
    "type": "number"
   },
   {
-   "caption": "Pitch (mm) \u2014 centre to centre, overriding diameter + gap: set it when your busbars or strip fix it; 0 to leave it",
+   "caption": "Pitch (mm) \u2014 centre to centre, overriding diameter + gap: set it when your busbars or nickel strip fix it; 0 to leave it",
    "group": "Cell",
    "initial": 0.0,
    "max": 120.0,
@@ -512,7 +512,7 @@
    "type": "number"
   },
   {
-   "caption": "Bow length (mm) \u2014 a bow spring's span between its roots: 8 is tested, and the longest drawn",
+   "caption": "Bow span (mm) \u2014 a bow spring's span between its roots: 8 is tested, and the longest drawn",
    "group": "Grip",
    "initial": 8.0,
    "max": 12.0,
@@ -522,7 +522,7 @@
    "type": "number"
   },
   {
-   "caption": "Shortest bow (mm) \u2014 the shortest drawn; shorter, it is too stiff to spring. Untested below 8",
+   "caption": "Shortest bow span (mm) \u2014 the shortest allowed: shorter, it is too stiff to spring. Untested below 8",
    "group": "Grip",
    "initial": 5.0,
    "max": 12.0,
@@ -542,12 +542,12 @@
    "type": "number"
   },
   {
-   "caption": "Bow press (mm) \u2014 how far the bows' middles stand inside the cell, on diameter: more grips harder",
+   "caption": "Bow press (mm) \u2014 how far the bows' faces stand inside the cell at their middle, on diameter: more grips harder",
    "group": "Grip",
-   "initial": 0.1,
-   "max": 1.0,
-   "min": -0.5,
-   "name": "TIP_PRESS",
+   "initial": 1.0,
+   "max": 2.0,
+   "min": 0.1,
+   "name": "BOW_PRESS",
    "step": 0.05,
    "type": "number"
   },
@@ -572,7 +572,7 @@
    "type": "number"
   },
   {
-   "caption": "Thinnest arm tip (mm) \u2014 where an arm between two cells is cut: thinner won't print as a wall",
+   "caption": "Arm tip width (mm) \u2014 where an arm between two cells is cut: thinner won't print as a wall",
    "group": "Grip",
    "initial": 2.0,
    "max": 5.0,
@@ -582,12 +582,12 @@
    "type": "number"
   },
   {
-   "caption": "Land clearance (mm) \u2014 the spacer's lands round each cell, on diameter: close enough to stop tilt, not to bind",
+   "caption": "Spacer land clearance (mm) \u2014 the spacer's lands round each cell, on diameter: close enough to stop tilt, not to bind",
    "group": "Grip",
    "initial": 0.2,
    "max": 1.0,
    "min": 0.0,
-   "name": "LAND_CLR",
+   "name": "SPACER_LAND_CLR",
    "step": 0.05,
    "type": "number"
   },

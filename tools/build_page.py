@@ -17,12 +17,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "configurator"
 OUT = ROOT / "vented-cell-frame.html"
-SOURCES = ["frame.scad", "spacer.scad", "coupon.scad", "lib/grip.scad", "lib/cells.scad"]
+SOURCES = ["frame.scad", "spacer.scad", "lib/grip.scad", "lib/cells.scad"]   # as configurator/app.js loads them
 
 
 def script_safe(text):
-    """Text that can sit inside a <script> element: nothing in it may close the element."""
-    return text.replace("</", "<\\/")
+    """Text that can sit inside a <script> element: nothing in it may close the element or open a comment, in any
+    case. In JSON and in JS strings, "<\\/" reads as "</"."""
+    return re.sub(r"</(script)", r"<\\/\1", text, flags=re.I).replace("<!--", "<\\!--")
 
 
 def build():
@@ -51,7 +52,6 @@ def build():
     banner = ("<!-- Built by tools/build_page.py from configurator/: edit those files, not this one. -->\n"
               "<!-- Noto Sans, embedded for the coupons' labels: SIL Open Font License 1.1 (configurator/fonts/OFL.txt). -->\n")
     html = html.replace("<html lang=\"en\">", banner + "<html lang=\"en\">", 1)
-    html = html.replace('href="../README.md"', 'href="https://github.com/alexanderwatanabe/vented-cell-frame#readme"')
     return html.replace(tag, data + "\n" + module)
 
 

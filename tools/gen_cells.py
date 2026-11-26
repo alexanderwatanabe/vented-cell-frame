@@ -24,8 +24,8 @@ def load():
     if len(set(names)) != len(names) or "custom" in names:
         raise SystemExit("presets/cells.json: names must be unique and not 'custom'")
     for c in cells:
-        if not (c["d"] > 0 and c["l"] > 0):
-            raise SystemExit(f"presets/cells.json: {c['name']} needs a positive d and l")
+        if not (c["diameter"] > 0 and c["length"] > 0):
+            raise SystemExit(f"presets/cells.json: {c['name']} needs a positive diameter and length")
     return cells
 
 
@@ -34,7 +34,7 @@ def fmt(x):
 
 
 def scad(cells):
-    rows = "\n".join(f'    ["{c["name"]}", {fmt(c["d"])}, {fmt(c["l"])}],   // {c["basis"]}' for c in cells)
+    rows = "\n".join(f'    ["{c["name"]}", {fmt(c["diameter"])}, {fmt(c["length"])}],   // {c["basis"]}' for c in cells)
     return f"""// SPDX-License-Identifier: CERN-OHL-S-2.0
 // Generated from presets/cells.json by tools/gen_cells.py: edit that file, not this one.
 // Cell presets: [name, body diameter, body length end face to end face], mm. A preset only says where the grip sits;
@@ -54,28 +54,31 @@ CELL_NAMES = [for (p = CELL_PRESETS) p[0]];
 def table(cells):
     lines = ["| Preset | Diameter × length (mm) | Basis | Datasheet |", "|---|---|---|---|"]
     for c in cells:
-        src = f"[link]({c['source']})" if c["source"] else "none found"
-        flag = " (VERIFY)" if c["verify"] else ""
-        lines.append(f"| {c['name']} | {fmt(c['d'])} × {fmt(c['l'])}{flag} | {c['basis']} | {src} |")
+        src = f"[link]({c['datasheet']})" if c["datasheet"] else "none found"
+        flag = "" if c["verified"] else " (VERIFY)"
+        lines.append(f"| {c['name']} | {fmt(c['diameter'])} × {fmt(c['length'])}{flag} | {c['basis']} | {src} |")
     return "\n".join(lines)
 
 
 def readme(cells):
     text = README.read_text()
+    if text.count(BEGIN) != 1 or text.count(END) != 1:
+        raise SystemExit(f"README.md: expected one {BEGIN} and one {END}")
     a, b = text.index(BEGIN) + len(BEGIN), text.index(END)
     return text[:a] + "\n" + table(cells) + "\n" + text[b:]
 
 
 def dropdown(path, cells):
     names = ", ".join([c["name"] for c in cells] + ["custom"])
-    return re.sub(r'^(CELL = "[^"]*"; // )\[.*\]$', lambda m: m.group(1) + f"[{names}]", path.read_text(), flags=re.M)
+    text, n = re.subn(r'^(CELL = "[^"]*"; // )\[.*\]$', lambda m: m.group(1) + f"[{names}]", path.read_text(), flags=re.M)
+    if n != 1:
+        raise SystemExit(f"{path.relative_to(ROOT)}: expected one CELL dropdown line, found {n}")
+    return text
 
 
 def main():
     cells = load()
-    want = {SCAD: scad(cells), **{p: dropdown(p, cells) for p in PARTS}}
-    if README.exists() and BEGIN in README.read_text():
-        want[README] = readme(cells)
+    want = {SCAD: scad(cells), README: readme(cells), **{p: dropdown(p, cells) for p in PARTS}}
     stale = [p for p, t in want.items() if not p.exists() or p.read_text() != t]
     if "--check" in sys.argv:
         if stale:

@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from coupon_set import GAP, layout, offsets  # noqa: E402
+from coupon_set import COUPON_SPACING, layout, offsets  # noqa: E402
 
 
 def test_offsets_spread_evenly_round_the_centre():
@@ -15,7 +15,7 @@ def test_offsets_spread_evenly_round_the_centre():
 
 def test_coupons_wrap_onto_a_new_row_when_the_plate_is_full():
     spots = layout([(100, 80)] * 3, 250)
-    assert spots == [(0, 0), (100 + GAP, 0), (0, 80 + GAP)]
+    assert spots == [(0, 0), (100 + COUPON_SPACING, 0), (0, 80 + COUPON_SPACING)]
 
 
 def test_a_set_bigger_than_the_plate_is_refused():

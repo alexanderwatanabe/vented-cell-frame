@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: CERN-OHL-S-2.0
-// A 3D view of one binary STL: orbit with the mouse, Z up as printed. Driven from outside through show() and clear().
+// A 3D view of one binary STL: orbit with the mouse, Z up as printed. Driven from outside through show(). It draws
+// only when something moves: the camera, the size, or a new part.
 
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -24,22 +25,27 @@ export function createViewer(host) {
   let mesh = null;
   const material = new THREE.MeshStandardMaterial({ color: 0xe07a1f, roughness: 0.55, metalness: 0.05 });
 
+  let queued = false;
+  function draw() {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      if (controls.update()) draw();   // damping still settling: keep going until it stops
+      renderer.render(scene, camera);
+    });
+  }
+  controls.addEventListener("change", draw);
   function resize() {
     const { clientWidth: w, clientHeight: h } = host;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    draw();
   }
   new ResizeObserver(resize).observe(host);
   resize();
-
-  function tick() {
-    controls.update();
-    renderer.render(scene, camera);
-    requestAnimationFrame(tick);
-  }
-  tick();
 
   return {
     show(buffer) {
@@ -57,9 +63,7 @@ export function createViewer(host) {
       camera.near = size / 100;
       camera.far = size * 20;
       camera.updateProjectionMatrix();
-    },
-    clear() {
-      if (mesh) { scene.remove(mesh); mesh.geometry.dispose(); mesh = null; }
+      draw();
     },
   };
 }
