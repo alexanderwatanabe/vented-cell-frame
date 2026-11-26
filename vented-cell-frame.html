@@ -428,6 +428,12 @@ const paramsOf = (step) => PARAMS[STEPS[step].params];
 const initial = (name) => PARAMS.frame.concat(PARAMS.spacer).find((p) => p.name === name)?.initial;
 const valueOf = (name) => state.set[name] ?? initial(name);
 
+// The fields a step hides: its own, and the cell's size while a preset gives it.
+const CUSTOM_ONLY = ["CELL_D", "CELL_L"];
+function hidden(step) {
+  return String(valueOf("CELL")) === "custom" ? STEPS[step].hide : [...STEPS[step].hide, ...CUSTOM_ONLY];
+}
+
 // The -D values for a step: only what the user set and the step uses, numbers as typed, strings as OpenSCAD
 // literals. A number that doesn't parse is left out, its field marked.
 function defines(step, extra = {}) {
@@ -435,7 +441,7 @@ function defines(step, extra = {}) {
   const out = STEPS[step].part ? { PART: JSON.stringify(STEPS[step].part) } : {};
   for (const [name, value] of Object.entries(state.set)) {
     const p = params[name];
-    if (!p || value === "" || STEPS[step].hide.includes(name)) continue;
+    if (!p || value === "" || hidden(step).includes(name)) continue;
     if (p.type === "string") out[name] = JSON.stringify(String(value));
     else if (Number.isFinite(Number(value))) out[name] = String(Number(value));
   }
@@ -460,7 +466,7 @@ function buildForm() {
   $("#intro").textContent = step.intro + (state.step === "spacer" ? spacerCount() : "");
   const groups = new Map();
   for (const p of paramsOf(state.step)) {
-    if (step.hide.includes(p.name) || (step.groups && !step.groups.includes(p.group))) continue;
+    if (hidden(state.step).includes(p.name) || (step.groups && !step.groups.includes(p.group))) continue;
     if (!groups.has(p.group)) groups.set(p.group, []);
     groups.get(p.group).push(p);
   }
