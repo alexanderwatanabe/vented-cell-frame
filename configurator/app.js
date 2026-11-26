@@ -38,8 +38,8 @@ const RESULTS = {   // [section, key, label, format, explanation]
     ["Size", "footprint", "Footprint", (v) => `${fmt(v[0])} × ${fmt(v[1])} mm`, "Outside, at the bumps"],
     ["Size", "height", "Height", (v) => `${fmt(v)} mm`, "Along the cells, as printed"],
     ["Size", "pitch", "Pitch", (v) => `${fmt(v)} mm`, "Centre to centre of neighbouring cells"],
-    ["Size", "cell_fit", "Cell, as the grip sees it", (v) => `${fmt(v)} mm`, "The diameter plus the fit offset"],
-    ["Grip", "grip", "Grip", (v) => (v === "gap" ? "in the gaps between cells" : "on the wall"), "Where the bow springs sit"],
+    ["Size", "cell_fit", "Fitted cell", (v) => `${fmt(v)} mm`, "The cell as the grip sees it: its diameter plus the fit offset"],
+    ["Grip", "grip", "Grip", (v) => (v === "gap" ? "in the gaps" : "on the wall"), "Where the bow springs sit"],
     ["Grip", "bow_span", "Bow span", (v) => `${fmt(v)} mm`, "8 mm is tested"],
     ["Grip", "bows_per_band", "Bows per band", (v) => v, "A band near each end"],
     ["Vents", "open_share", "Wall open", (v) => `${Math.round(v * 100)} %`, "Between the bands of bows"],
@@ -360,6 +360,7 @@ async function check() {
   if (failure) { showResults(null); return setCheck("failed", [failure]); }
   if (bad.length) return setCheck("refused", bad);
   showResults(values, name, map);
+  drawPlan(values, name);
   setCheck("ok", [], ms);
 }
 
@@ -376,7 +377,11 @@ function setCheck(status, messages = [], ms) {
   box.replaceChildren(el("strong", {}, head));
   if (messages.length) box.append(el("ul", {}, ...messages.map((m) => el("li", {}, linkify(m), hintFor(m)))));
   $("#results").classList.toggle("stale", status === "pending");
-  if (status === "refused") $("#results").replaceChildren(el("p", { class: "muted" }, "Sizes and the wall map show once the design is printable."));
+  $("#plan").classList.toggle("stale", status !== "ok");
+  if (status === "refused") {
+    $("#results").replaceChildren(el("p", { class: "muted" }, "Sizes and the wall map show once the design is printable."));
+    if (!$("#plan").firstChild) drawPlan(planFromForm(), state.step === "spacer" ? "SPACER" : "FRAME");
+  }
 }
 
 // Field names in a message become links to their fields, where the step shows them.
@@ -409,11 +414,8 @@ function showResults(values, name, map) {
     if (!sections.has(section)) sections.set(section, []);
     sections.get(section).push(el("tr", { title: why }, el("th", {}, label), el("td", {}, f(values[key]))));
   }
-  for (const [section, rows] of sections) {
-    const block = el("section", { class: "result" }, el("h3", {}, section), el("table", {}, ...rows));
-    if (section === "Vents" && map) block.append(wallMap(map));
-    box.append(block);
-  }
+  for (const [section, rows] of sections) box.append(el("section", { class: "result" }, el("h3", {}, section), el("table", {}, ...rows)));
+  if (map && !skip.includes("Vents")) box.append(el("section", { class: "result" }, el("h3", {}, "The wall, unrolled"), wallMap(map)));
 }
 
 // The wall unrolled: along it across, up the frame upward, two repeats of its pattern. A value is the wall's thickness:
@@ -425,13 +427,14 @@ function wallMap({ ds, dz, pitch, rows }) {
   const ratio = window.devicePixelRatio || 1;
   const canvas = el("canvas", { role: "img", "aria-label": "The wall unrolled: vents and solid, two repeats of the pattern" });
   canvas.style.width = `${width * scale}px`;
-  canvas.style.height = `${(height + tick) * scale}px`;
+  canvas.style.maxWidth = "100%";
+  canvas.style.height = "auto";
   canvas.width = Math.round(width * scale * ratio);
   canvas.height = Math.round((height + tick) * scale * ratio);
   const g = canvas.getContext("2d");
   g.setTransform(scale * ratio, 0, 0, -scale * ratio, 0, height * scale * ratio);   // mm, z up, the map above the ticks
   const css = getComputedStyle(document.documentElement);
-  const wall = css.getPropertyValue("--accent").trim(), touch = css.getPropertyValue("--ink").trim();
+  const wall = css.getPropertyValue("--cobalt").trim(), touch = css.getPropertyValue("--ink").trim();
   const thickest = Math.max(...rows.flat().map(Math.abs));
   for (let r = 0; r < rows.length; r++) for (let rep = 0; rep < repeats; rep++) for (let c = 0; c < cols; c++) {
     const v = rows[r][c];
@@ -445,9 +448,118 @@ function wallMap({ ds, dz, pitch, rows }) {
   g.lineWidth = 1 / scale;
   for (let x = 0; x <= width + 1e-6; x += pitch) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, -tick); g.stroke(); }
   return el("figure", { class: "wallmap" }, canvas,
-    el("figcaption", {}, "The wall unrolled, to scale, as printed: ",
+    el("figcaption", {}, "Two repeats of the pattern, to scale, as printed: ",
       el("span", { class: "key wall" }), " wall, darker where thicker; ", el("span", { class: "key touch" }),
       " touches the cells; gaps are vents. Ticks under it mark each cell's middle."));
+}
+
+// ---- the plan: the block from above, to scale, from the check's own figures. A 10 mm grid behind it; the frame's
+// outline (round at the corners, as it is), every cell with its positive cap, and a cobalt mark where each bow
+// spring meets a cell; the footprint dimensioned along two edges.
+const SVG = "http://www.w3.org/2000/svg";
+function svg(tag, attrs = {}, ...kids) {
+  const e = document.createElementNS(SVG, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  for (const kid of kids) if (kid) e.append(kid);
+  return e;
+}
+function drawPlan(values, name) {
+  const box = $("#plan");
+  if (!values) return;
+  const spacer = name === "SPACER";
+  const p = values.pitch, d = values.body_d;
+  const [cols, rows] = spacer ? [2, 2] : values.cells;
+  const centres = [];
+  for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) centres.push([i * p, j * p, i, j]);
+  // a frame's outside, from its footprint; a spacer's, from its arms; none yet if only the form's values are known
+  const out = spacer ? values.across_arms / 2 : values.footprint ? (values.footprint[0] - (cols - 1) * p) / 2 : d / 2;
+  const reach = Math.max(out, d / 2);
+  const span = Math.max((cols - 1) * p, (rows - 1) * p) + 2 * reach;
+  const pad = Math.max(18, span * 0.2), dimGap = Math.max(6, span * 0.04);
+  // room above for the status, below for the dimension and the buttons
+  const x0 = -reach - pad, y0 = -reach - pad * 1.3;
+  const w = (cols - 1) * p + 2 * (reach + pad), h = (rows - 1) * p + 2 * reach + pad * 2.9;
+  const root = svg("svg", { viewBox: `${x0} ${y0} ${w} ${h}`, preserveAspectRatio: "xMidYMid meet" });
+  const font = Math.max(3.2, span * 0.028);
+  // the grid, 10 mm, aligned to the first cell's axis, out past the drawing to the stage's edges
+  const grid = svg("g", { stroke: "var(--grid)", "stroke-width": 0.35 });
+  const gx0 = Math.floor((x0 - 2 * w) / 10) * 10, gy0 = Math.floor((y0 - 2 * h) / 10) * 10;
+  for (let x = gx0; x < x0 + 3 * w; x += 10) grid.append(svg("line", { x1: x, y1: y0 - 2 * h, x2: x, y2: y0 + 3 * h }));
+  for (let y = gy0; y < y0 + 3 * h; y += 10) grid.append(svg("line", { x1: x0 - 2 * w, y1: y, x2: x0 + 3 * w, y2: y }));
+  root.append(grid);
+  const cell = (x, y) => svg("g", {},
+    svg("circle", { cx: x, cy: y, r: d / 2, fill: "var(--cell)" }),
+    svg("circle", { cx: x, cy: y, r: d * 0.27, fill: "var(--cell-cap)" }),
+    svg("circle", { cx: x, cy: y, r: d * 0.1, fill: "var(--cell)" }));
+  if (spacer) {
+    const c = [[-p / 2, -p / 2], [p / 2, -p / 2], [-p / 2, p / 2], [p / 2, p / 2]];
+    root.append(svg("circle", { cx: 0, cy: 0, r: out, fill: "var(--cobalt)", opacity: 0.85 }));
+    for (const [x, y] of c) root.append(cell(x, y));
+    const r = p / 2 + d / 2 + pad;
+    root.setAttribute("viewBox", `${-r} ${-r - pad * 0.3} ${2 * r} ${2 * r + pad * 0.9}`);
+  } else if (!values.footprint) {
+    for (const [x, y] of centres) root.append(cell(x, y));
+  } else {
+    const W = (cols - 1) * p, H = (rows - 1) * p, wallIn = values.land_d / 2 + 1.2;
+    root.append(svg("path", { "fill-rule": "evenodd", fill: "var(--cobalt)", "fill-opacity": 0.22, stroke: "var(--cobalt)", "stroke-width": 0.8,
+      d: roundRect(-out, -out, W + 2 * out, H + 2 * out, out) + roundRect(-wallIn, -wallIn, W + 2 * wallIn, H + 2 * wallIn, wallIn) }));
+    for (const [x, y] of centres) root.append(cell(x, y));
+    // the bows: where each one's face meets its cell
+    const marks = svg("g", { fill: "var(--cobalt)" });
+    const mark = (cx, cy, ux, uy) => { const n = Math.hypot(ux, uy); marks.append(svg("circle", { cx: cx + ux / n * d / 2, cy: cy + uy / n * d / 2, r: Math.max(1.1, d * 0.06) })); };
+    const edge = centres.filter(([, , i, j]) => i === 0 || j === 0 || i === cols - 1 || j === rows - 1);
+    if (values.grip === "gap") {
+      for (const [x, y, i, j] of edge) {
+        const dirs = [];
+        if (j === 0 || j === rows - 1) { const sy = j === 0 ? -1 : 1; if (i > 0) dirs.push([-1, sy]); if (i < cols - 1) dirs.push([1, sy]); }
+        if (i === 0 || i === cols - 1) { const sx = i === 0 ? -1 : 1; if (j > 0) dirs.push([sx, -1]); if (j < rows - 1) dirs.push([sx, 1]); }
+        for (const [ux, uy] of dirs) mark(x, y, ux, uy);
+      }
+    } else {
+      for (const [x, y, i, j] of edge) {
+        if (j === 0) mark(x, y, 0, -1);
+        if (j === rows - 1) mark(x, y, 0, 1);
+        if (i === 0) mark(x, y, -1, 0);
+        if (i === cols - 1) mark(x, y, 1, 0);
+      }
+    }
+    root.append(marks);
+    // the footprint, dimensioned under and beside the frame
+    const dims = svg("g", { stroke: "var(--muted)", "stroke-width": 0.4, fill: "var(--ink)" });
+    const yb = H + out + dimGap, xr = W + out + dimGap;
+    dims.append(svg("line", { x1: -out, y1: yb, x2: W + out, y2: yb }), svg("line", { x1: -out, y1: yb - 2, x2: -out, y2: yb + 2 }),
+      svg("line", { x1: W + out, y1: yb - 2, x2: W + out, y2: yb + 2 }));
+    dims.append(svg("line", { x1: xr, y1: -out, x2: xr, y2: H + out }), svg("line", { x1: xr - 2, y1: -out, x2: xr + 2, y2: -out }),
+      svg("line", { x1: xr - 2, y1: H + out, x2: xr + 2, y2: H + out }));
+    const label = (x, y, text, rotate) => {
+      const t = svg("text", { x, y, "text-anchor": "middle", "font-size": font, stroke: "none", "paint-order": "stroke",
+        style: "font-family: var(--display); font-stretch: 112%; font-weight: 700" });
+      t.textContent = text;
+      if (rotate) t.setAttribute("transform", `rotate(-90 ${x} ${y})`);
+      return t;
+    };
+    dims.append(label(W / 2, yb + font * 1.25, `${fmt(values.footprint[0])} mm`), label(xr + font * 1.1, H / 2, `${fmt(values.footprint[1])} mm`, true));
+    root.append(dims);
+  }
+  box.replaceChildren(root);
+}
+// The cells alone, from the form, for when no check has passed yet to give the frame's figures.
+function planFromForm() {
+  const cell = CELLS.find((c) => c.name === String(valueOf("CELL")));
+  const d = Number(valueOf("CELL_D")) || cell?.diameter;
+  if (!d) return null;
+  const p = Number(valueOf("PITCH")) || d + Number(valueOf("CELL_GAP"));
+  return state.step === "spacer" ? { pitch: p, body_d: d, across_arms: 0 }
+    : { pitch: p, body_d: d, cells: state.step === "coupons" ? [2, 2] : [Number(valueOf("CELL_COLUMNS")), Number(valueOf("CELL_ROWS"))] };
+}
+function roundRect(x, y, w, h, r) {
+  return `M${x + r},${y}h${w - 2 * r}a${r},${r} 0 0 1 ${r},${r}v${h - 2 * r}a${r},${r} 0 0 1 ${-r},${r}h${-(w - 2 * r)}a${r},${r} 0 0 1 ${-r},${-r}v${-(h - 2 * r)}a${r},${r} 0 0 1 ${r},${-r}z`;
+}
+
+// ---- the stage shows the plan, or the rendered part once there is one
+function setView(view) {
+  $(".stage").dataset.view = view;
+  for (const b of document.querySelectorAll(".views button")) b.setAttribute("aria-pressed", String(b.dataset.view === view));
 }
 
 // ---- rendering. A render takes its settings and its file's name when it starts; changing the form meanwhile marks
@@ -467,6 +579,7 @@ async function render() {
   rendering = plan;
   renderer = spawn();
   $("#render").textContent = "Cancel";
+  $("#render").dataset.busy = "";
   const tickStatus = () => setRender("pending", `${plan.progress} ${Math.round((performance.now() - plan.t0) / 1000)} s`);
   plan.timer = setInterval(tickStatus, 1000);
   tickStatus();
@@ -484,8 +597,10 @@ async function render() {
     lastStl = parts.length > 1 ? mergeStl(parts, plan.plate) : parts[0];
     renderedFor = plan.key;
     renderedName = plan.name;
+    setView("3d");
     viewer.show(lastStl);
     $("#empty").hidden = true;
+    document.querySelector('.views [data-view="3d"]').disabled = false;
     setRender("done", `Rendered in ${Math.round((performance.now() - plan.t0) / 1000)} s`);
   } catch (e) {
     if (rendering === plan) setRender("failed", String(e.message || e));
@@ -499,6 +614,7 @@ function finishRender() {
   stop(renderer);
   renderer = null;
   $("#render").textContent = STEPS[state.step].render;
+  delete $("#render").dataset.busy;
   updateStale();
 }
 function cancelRender(text) {
@@ -581,6 +697,7 @@ function changed() {
   checkSeq++;
   $("#check").classList.add("stale");
   $("#results").classList.add("stale");
+  $("#plan").classList.add("stale");
   clearTimeout(debounce);
   debounce = setTimeout(check, 300);
 }
@@ -613,6 +730,7 @@ async function main() {
   Object.entries(STEPS).forEach(([key, s], i) => $("#steps").append(
     el("button", { type: "button", "data-step": key, onclick: () => showStep(key) }, el("span", { class: "num" }, String(i + 1)), s.label)));
   $("#render").addEventListener("click", render);
+  for (const b of document.querySelectorAll(".views button")) b.addEventListener("click", () => setView(b.dataset.view));
   $("#download").addEventListener("click", download);
   setRender("idle");
   showStep(state.step);

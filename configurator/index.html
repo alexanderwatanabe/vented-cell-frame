@@ -6,6 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vented cell frame</title>
 <link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112..125,500..900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -13,142 +16,215 @@
 } }
 </script>
 <style>
+  /* Drafting grey and graphite for the workbench; cobalt for the part itself (its filament, and every control that
+     acts on it); PEI bronze for the build plate it is shown on. */
   :root {
-    --bg: #f6f5f2; --panel: #ffffff; --ink: #1d1d1b; --muted: #65635d; --line: #dedbd3;
-    --accent: #c4600f; --accent-soft: #fbeee2; --ok: #2f7d4f; --bad: #b3261e; --pending: #8a6d1f; --field: #fbfaf8;
+    --paper: #e9edf0; --sheet: #f7f9fa; --ink: #17212b; --muted: #5b6b78; --rule: #c9d2d9; --field: #ffffff;
+    --cobalt: #2f4fe0; --cobalt-ink: #ffffff; --cobalt-soft: #dfe5fd;
+    --bronze: #b8843b; --bronze-deep: #6e4a1c; --cell: #2a3a47; --cell-cap: #c7cfd6; --grid: rgba(23, 33, 43, 0.07);
+    --ok: #1d7f55; --bad: #c93a26; --pending: #a26a00;
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+    --code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #161614; --panel: #1f1f1c; --ink: #ecebe6; --muted: #a5a39b; --line: #36352f;
-      --accent: #f08a3a; --accent-soft: #3a2a1c; --ok: #6cc391; --bad: #f08a80; --pending: #e0c060; --field: #262622;
+      --paper: #11171d; --sheet: #182029; --ink: #e6ecf1; --muted: #93a3b0; --rule: #2c3844; --field: #0f151b;
+      --cobalt: #7d93ff; --cobalt-ink: #0b1020; --cobalt-soft: #1f2a55;
+      --cell: #8796a3; --cell-cap: #2a3540; --grid: rgba(230, 236, 241, 0.06);
+      --ok: #5cc493; --bad: #f0806e; --pending: #e0b050;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #161614; --panel: #1f1f1c; --ink: #ecebe6; --muted: #a5a39b; --line: #36352f;
-    --accent: #f08a3a; --accent-soft: #3a2a1c; --ok: #6cc391; --bad: #f08a80; --pending: #e0c060; --field: #262622;
+    --paper: #11171d; --sheet: #182029; --ink: #e6ecf1; --muted: #93a3b0; --rule: #2c3844; --field: #0f151b;
+    --cobalt: #7d93ff; --cobalt-ink: #0b1020; --cobalt-soft: #1f2a55;
+    --cell: #8796a3; --cell-cap: #2a3540; --grid: rgba(230, 236, 241, 0.06);
+    --ok: #5cc493; --bad: #f0806e; --pending: #e0b050;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15.5px/1.45 var(--body); }
   button { font: inherit; color: inherit; }
-  header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
-  h1 { font-size: 18px; margin: 0; font-weight: 650; }
-  header .tagline { color: var(--muted); font-size: 13.5px; }
-  header .spacer { flex: 1; }
-  header a { color: var(--muted); font-size: 13px; }
-  #steps { display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 20px 0; }
-  #steps button { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--panel); padding: 7px 14px 7px 8px; border-radius: 999px; cursor: pointer; }
-  #steps .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--line); font-size: 12.5px; font-weight: 600; }
-  #steps button[aria-current="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
-  #steps button[aria-current="true"] .num { background: var(--accent); color: #fff; }
-  #intro { margin: 10px 20px 0; max-width: 900px; color: var(--muted); }
-  main { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; margin-top: 12px; border-top: 1px solid var(--line); }
-  #form { border-right: 1px solid var(--line); padding: 4px 16px 40px; overflow-y: auto; max-height: calc(100vh - 150px); background: var(--panel); }
-  .group { border-bottom: 1px solid var(--line); padding: 4px 0 8px; }
-  .group summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
-  .group .tag { margin-left: 8px; font-weight: 400; font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
-  .field { display: grid; grid-template-columns: 1fr minmax(110px, 150px) 22px; gap: 2px 8px; align-items: center; padding: 7px 4px 7px 10px; border-left: 3px solid transparent; border-radius: 0 6px 6px 0; }
-  .field:has(.pair) { grid-template-columns: 1fr minmax(170px, 210px) 22px; }
-  .field.set { border-left-color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+
+  /* ---- masthead */
+  .top { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 6px 24px; padding: 22px 28px 14px; }
+  h1 { margin: 0; font: 850 clamp(26px, 3.4vw, 40px)/0.95 var(--display); font-stretch: 125%; letter-spacing: -0.01em; }
+  .top p { margin: 6px 0 0; color: var(--muted); max-width: 60ch; }
+  .top a { color: var(--muted); font-size: 14px; text-underline-offset: 3px; }
+  .top a:hover { color: var(--cobalt); }
+
+  /* ---- the steps: a real sequence, so numbered */
+  #steps { display: flex; flex-wrap: wrap; gap: 0; margin: 0 28px; border-bottom: 2px solid var(--rule); }
+  #steps button { display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 10px 18px 12px 0;
+    margin-right: 22px; cursor: pointer; color: var(--muted); font: 700 16px var(--display); font-stretch: 112%;
+    border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  #steps .num { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid currentColor; font-size: 13px; font-weight: 800; }
+  #steps button:hover { color: var(--ink); }
+  #steps button[aria-current="true"] { color: var(--ink); border-bottom-color: var(--cobalt); }
+  #steps button[aria-current="true"] .num { background: var(--cobalt); border-color: var(--cobalt); color: var(--cobalt-ink); }
+  #intro { margin: 14px 28px 0; max-width: 78ch; color: var(--muted); }
+
+  /* ---- the workbench: controls left, the stage and its readouts right */
+  main { display: grid; grid-template-columns: minmax(330px, 410px) 1fr; gap: 22px; padding: 18px 28px 40px; align-items: start; }
+  #form { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 6px 18px 18px;
+    max-height: calc(100vh - 40px); overflow-y: auto; position: sticky; top: 20px; }
+  .group { border-bottom: 1px solid var(--rule); padding: 2px 0 10px; }
+  .group:last-of-type { border-bottom: 0; }
+  .group summary { cursor: pointer; padding: 12px 0 6px; font: 750 15px var(--display); font-stretch: 112%; list-style: none;
+    display: flex; align-items: baseline; gap: 10px; }
+  .group summary::-webkit-details-marker { display: none; }
+  .group summary::before { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+    transform: rotate(-45deg); transition: transform 0.15s; flex: none; align-self: center; }
+  .group[open] summary::before { transform: rotate(45deg); }
+  .group .tag { font: 500 12.5px var(--body); color: var(--muted); }
+  .field { display: grid; grid-template-columns: 1fr minmax(112px, 148px) 22px; gap: 3px 10px; align-items: center;
+    padding: 8px 4px 8px 12px; margin-left: -12px; border-left: 3px solid transparent; border-radius: 0 6px 6px 0; }
+  .field:has(.pair) { grid-template-columns: 1fr minmax(176px, 214px) 22px; }
+  .field.set { border-left-color: var(--cobalt); background: color-mix(in srgb, var(--cobalt-soft) 45%, transparent); }
   .field.flash { animation: flash 1.6s ease-out; }
-  @keyframes flash { from { background: var(--accent-soft); } to { background: transparent; } }
-  .field .label { font-size: 14px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
-  .field code { font: 11px ui-monospace, "SF Mono", Menlo, monospace; color: var(--muted); }
-  .field .help, .field .note { grid-column: 1 / 3; color: var(--muted); font-size: 12.5px; }
+  @keyframes flash { from { background: var(--cobalt-soft); } }
+  .field .label { font-weight: 600; font-size: 14.5px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+  .field code { font: 11.5px var(--code); color: var(--muted); font-weight: 400; }
+  .field .help, .field .note { grid-column: 1 / 3; color: var(--muted); font-size: 13px; line-height: 1.4; }
   .field .note { color: var(--ink); }
-  .field a { color: var(--accent); }
-  .field .reset { visibility: hidden; border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0; font-size: 15px; }
+  .field a { color: var(--cobalt); }
+  .field .reset { visibility: hidden; border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0; font-size: 16px; }
   .field.set .reset { visibility: visible; }
-  .field .reset:hover, .field .reset:focus-visible { color: var(--accent); }
-  .pair { display: grid; grid-template-columns: 1fr 64px; gap: 6px; align-items: center; }
-  input[type="range"] { width: 100%; accent-color: var(--accent); }
-  input:not([type="range"]), select { width: 100%; font: inherit; font-size: 14px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--field); color: var(--ink); }
+  .field .reset:hover { color: var(--cobalt); }
+  .pair { display: grid; grid-template-columns: 1fr 64px; gap: 8px; align-items: center; }
+  input[type="range"] { width: 100%; accent-color: var(--cobalt); }
+  input:not([type="range"]), select { width: 100%; font: 500 14.5px var(--body); padding: 5px 8px; border: 1px solid var(--rule);
+    border-radius: 6px; background: var(--field); color: var(--ink); font-variant-numeric: tabular-nums; }
+  input:focus, select:focus { border-color: var(--cobalt); outline: none; box-shadow: 0 0 0 3px var(--cobalt-soft); }
   input::placeholder { color: var(--muted); }
-  .quiet { margin-top: 14px; background: transparent; border: 1px solid var(--line); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
-  section.out { padding: 16px 20px; display: grid; grid-template-columns: minmax(260px, 330px) 1fr; gap: 16px; align-content: start; min-width: 0; }
-  #check { grid-column: 1 / -1; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); }
-  #check strong { display: block; }
-  #check[data-status="ok"] { border-color: var(--ok); }
+  .field.invalid input:not([type="range"]) { border-color: var(--bad); }
+  .quiet { margin-top: 16px; background: transparent; border: 1px solid var(--rule); padding: 7px 12px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+  .quiet:hover { color: var(--ink); border-color: var(--muted); }
+
+  /* ---- the stage: a plan of the block to scale, or the printed part on a PEI plate */
+  .bench { display: grid; gap: 22px; min-width: 0; }
+  .stage { position: relative; border-radius: 12px; overflow: hidden; min-height: 520px; height: min(66vh, 640px);
+    background: var(--sheet); border: 1px solid var(--rule); }
+  .stage[data-view="3d"] { background:
+      radial-gradient(circle at 30% 20%, rgba(255, 236, 200, 0.35), transparent 55%),
+      repeating-radial-gradient(circle at 17% 31%, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px),
+      repeating-radial-gradient(circle at 71% 63%, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 4px),
+      linear-gradient(150deg, #c99550, var(--bronze) 45%, #8f6129); border-color: var(--bronze-deep); }
+  #plan, #viewer { position: absolute; inset: 0; }
+  #plan svg { width: 100%; height: 100%; display: block; }
+  .stage[data-view="plan"] #viewer, .stage[data-view="3d"] #plan { visibility: hidden; }
+  #viewer canvas { display: block; width: 100%; height: 100%; }
+  #viewer.stale canvas, #plan.stale { opacity: 0.4; }
+  .stage-top { position: absolute; left: 14px; right: 14px; top: 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; justify-content: space-between; pointer-events: none; }
+  .stage-top > * { pointer-events: auto; }
+  .stage-bottom { position: absolute; left: 14px; right: 14px; bottom: 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+  #check { max-width: min(560px, 100%); padding: 9px 14px; border-radius: 8px; background: var(--sheet);
+    border: 1px solid var(--rule); box-shadow: 0 1px 0 var(--rule); font-size: 14.5px; }
+  #check strong { display: flex; align-items: center; gap: 8px; font: 750 15px var(--display); font-stretch: 112%; }
+  #check strong::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
   #check[data-status="ok"] strong { color: var(--ok); }
-  #check[data-status="ok"] strong::before { content: "✓ "; }
+  #check[data-status="ok"] strong::before { background: var(--ok); }
   #check[data-status="refused"], #check[data-status="failed"] { border-color: var(--bad); }
   #check[data-status="refused"] strong, #check[data-status="failed"] strong { color: var(--bad); }
-  #check[data-status="refused"] strong::before, #check[data-status="failed"] strong::before { content: "✕ "; }
+  #check[data-status="refused"] strong::before, #check[data-status="failed"] strong::before { background: var(--bad); border-radius: 2px; transform: rotate(45deg); }
   #check[data-status="pending"] strong { color: var(--pending); }
-  #check[data-status="pending"] strong::before { content: "◌ "; display: inline-block; animation: spin 1.2s linear infinite; }
-  #check ul { margin: 6px 0 0; padding-left: 20px; }
-  #check .hint { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
-  .link { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; }
+  #check[data-status="pending"] strong::before { background: none; border: 2px solid var(--pending); border-right-color: transparent; animation: spin 0.9s linear infinite; }
+  #check.stale { opacity: 0.55; }
+  #check ul { margin: 6px 0 0; padding-left: 18px; }
+  #check .hint { color: var(--muted); font-size: 13.5px; margin-top: 3px; }
+  .link { border: 0; background: none; padding: 0; color: var(--cobalt); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  #results { display: grid; gap: 16px; align-content: start; }
-  #results.stale, #check.stale { opacity: 0.45; }
-  .field.invalid input:not([type="range"]) { border-color: var(--bad); }
-  .result h3 { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 4px; }
-  .result table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
-  .result th { text-align: left; font-weight: 400; color: var(--muted); padding: 3px 8px 3px 0; }
-  .result td { text-align: right; padding: 3px 0; }
-  .wallmap { margin: 10px 0 0; }
-  .wallmap canvas { display: block; border-bottom: 1px solid var(--line); }
-  .wallmap figcaption { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
-  .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; }
-  .key.wall { background: var(--accent); opacity: 0.7; }
-  .key.touch { background: var(--ink); }
-  .stage { display: grid; grid-template-rows: auto 1fr; gap: 8px; min-height: 460px; }
-  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-  #render { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; font-weight: 600; }
-  #download { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; }
-  #download:disabled { opacity: 0.4; cursor: default; }
-  #render-status { color: var(--muted); font-size: 13.5px; }
+
+  .views { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--sheet); }
+  .views button { border: 0; background: none; padding: 7px 14px; cursor: pointer; font: 650 13.5px var(--display); font-stretch: 112%; color: var(--muted); }
+  .views button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); }
+  .views button:disabled { opacity: 0.4; cursor: default; }
+  #render { padding: 10px 20px; border-radius: 8px; border: 0; background: var(--cobalt); color: var(--cobalt-ink); cursor: pointer;
+    font: 750 15px var(--display); font-stretch: 112%; box-shadow: 0 2px 0 color-mix(in srgb, var(--cobalt) 60%, black); }
+  #render:hover { filter: brightness(1.08); }
+  #render[data-busy] { background: var(--ink); color: var(--sheet); box-shadow: none; }
+  #download { padding: 9px 16px; border-radius: 8px; border: 1px solid var(--rule); background: var(--sheet); cursor: pointer; font-weight: 600; }
+  #download:disabled { opacity: 0.5; cursor: default; }
+  .note-chip { padding: 6px 10px; border-radius: 6px; background: var(--sheet); font-size: 13.5px; color: var(--muted); }
+  .note-chip:empty { display: none; }
   #render-status[data-status="failed"] { color: var(--bad); }
   #render-status[data-status="done"] { color: var(--ok); }
-  #stale-note { color: var(--pending); font-size: 13.5px; }
-  #viewer { position: relative; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); min-height: 420px; overflow: hidden; }
-  #viewer canvas { display: block; width: 100%; height: 100%; position: absolute; inset: 0; }
-  #viewer.stale canvas { opacity: 0.45; }
+  #stale-note { color: var(--pending); }
+  #empty { position: absolute; right: 18px; top: 66px; max-width: 250px; text-align: right; color: var(--muted); font-size: 13.5px; pointer-events: none; }
   #empty[hidden] { display: none; }
+
+  /* ---- the readouts: a spec sheet, set like a cell's printed label */
+  #results { display: grid; grid-template-columns: repeat(auto-fit, minmax(186px, 1fr)); gap: 18px 24px; align-items: start;
+    background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 18px 22px 20px; }
+  #results:empty { display: none; }
+  #results.stale { opacity: 0.45; }
+  .result h3 { margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid var(--ink); font: 800 16px var(--display); font-stretch: 125%; }
+  .result table { border-collapse: collapse; width: 100%; }
+  .result th { text-align: left; font-weight: 500; color: var(--muted); padding: 4px 8px 4px 0; font-size: 14px; }
+  .result td { text-align: right; padding: 4px 0; font: 650 15px var(--display); font-stretch: 112%; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .result tr + tr th, .result tr + tr td { border-top: 1px solid var(--rule); }
   .muted { color: var(--muted); margin: 0; }
-  #empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--muted); padding: 24px; pointer-events: none; }
+  .wallmap { margin: 4px 0 0; }
+  .wallmap canvas { display: block; }
+  .wallmap figcaption { color: var(--muted); font-size: 12.5px; margin-top: 8px; max-width: 46ch; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; }
+  .key.wall { background: var(--cobalt); opacity: 0.75; }
+  .key.touch { background: var(--ink); }
+
   @media (prefers-reduced-motion: reduce) {
     #check[data-status="pending"] strong::before { animation: none; }
-    .field.flash { animation: none; background: var(--accent-soft); }
+    .field.flash { animation: none; background: var(--cobalt-soft); }
+    .group summary::before { transition: none; }
   }
-  @media (max-width: 980px) {
-    main { grid-template-columns: 1fr; }
-    #form { border-right: 0; border-bottom: 1px solid var(--line); max-height: none; }
-    section.out { grid-template-columns: 1fr; padding: 16px; }
-    #steps, header { padding-left: 16px; padding-right: 16px; }
-    #intro { margin-left: 16px; margin-right: 16px; }
+  @media (max-width: 1000px) {
+    main { grid-template-columns: 1fr; padding: 16px; }
+    #form { position: static; max-height: none; }
+    .top { padding: 18px 16px 10px; grid-template-columns: 1fr; }
+    #steps { margin: 0 16px; }
+    #intro { margin: 12px 16px 0; }
+    .stage { height: 70vh; min-height: 420px; }
+    #empty { display: none; }
   }
 </style>
 </head>
 <body>
-<header>
-  <h1>Vented cell frame</h1>
-  <span class="tagline">A printable, vented frame for a block of cylindrical cells</span>
-  <span class="spacer"></span>
-  <a href="https://github.com/alexanderwatanabe/vented-cell-frame#readme">How it works</a>
+<header class="top">
+  <div>
+    <h1>Vented cell frame</h1>
+    <p>A printed frame for a block of cylindrical cells: grips every edge cell, vents its walls, prints without supports.</p>
+  </div>
+  <a href="https://github.com/alexanderwatanabe/vented-cell-frame#readme">How it works, and safety</a>
 </header>
 <nav id="steps" aria-label="Steps"></nav>
 <p id="intro"></p>
 <main>
-  <form id="form" autocomplete="off" onsubmit="return false"></form>
-  <section class="out">
-    <div id="check" data-status="pending" role="status" aria-live="polite"><strong>Loading OpenSCAD…</strong></div>
-    <div id="results" aria-label="What the design works out to"></div>
-    <div class="stage">
-      <div class="bar">
+  <form id="form" autocomplete="off" onsubmit="return false" aria-label="Settings"></form>
+  <div class="bench">
+    <section class="stage" data-view="plan" aria-label="The part">
+      <div id="plan" role="img" aria-label="The block from above, to scale"></div>
+      <div id="viewer" aria-label="3D view of the rendered part"></div>
+      <div class="stage-top">
+        <div id="check" data-status="pending" role="status" aria-live="polite"><strong>Loading OpenSCAD…</strong></div>
+        <div class="views" role="group" aria-label="View">
+          <button type="button" data-view="plan" aria-pressed="true">Plan</button>
+          <button type="button" data-view="3d" aria-pressed="false" disabled>3D</button>
+        </div>
+      </div>
+      <div id="empty">The plan redraws as you change settings. Render to see the printed part in 3D.</div>
+      <div class="stage-bottom">
         <button id="render" type="button">Render</button>
         <button id="download" type="button" disabled>Download STL</button>
-        <span id="render-status" role="status"></span>
-        <span id="stale-note" hidden>This view is of an earlier setting: render again.</span>
+        <span id="render-status" class="note-chip" role="status"></span>
+        <span id="stale-note" class="note-chip" hidden>This 3D view is of an earlier setting: render again.</span>
       </div>
-      <div id="viewer" aria-label="3D view of the rendered part">
-        <div id="empty">Render to see the part in 3D and download it.<br>A coupon set takes a few seconds; a full frame up to a minute or two.</div>
-      </div>
-    </div>
-  </section>
+    </section>
+    <div id="results" aria-label="What the design works out to"></div>
+  </div>
 </main>
 <script type="module" src="app.js"></script>
 </body>

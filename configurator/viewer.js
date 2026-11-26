@@ -23,7 +23,7 @@ export function createViewer(host) {
   controls.enableDamping = true;
 
   let mesh = null;
-  const material = new THREE.MeshStandardMaterial({ color: 0xe07a1f, roughness: 0.55, metalness: 0.05 });
+  const material = new THREE.MeshStandardMaterial({ color: 0x2f4fe0, roughness: 0.45, metalness: 0.05 });
 
   let queued = false;
   function draw() {
