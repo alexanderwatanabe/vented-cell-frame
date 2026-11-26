@@ -62,7 +62,8 @@ There are three ways to set it up:
 
   You can also keep your settings in a file of your own: `include <frame.scad>`, followed by your values.
 
-Every input has a default worked out from the cell. These are the ones most builds change:
+Every input has a plain name in the configurator and the Customizer, and a short name in the `.scad` file for `-D`
+on the command line. Every input has a default worked out from the cell. These are the ones most builds change:
 
 | Input | What it sets |
 |---|---|
@@ -105,16 +106,16 @@ Between the bands, the wall's inside face is two sine waves added together. One 
 each cell's middle; the other runs up the frame. The outside mirrors the inside about a datum, and the wall opens
 wherever the inside passes it. Each input changes the vents in its own way:
 
-| Input | What it changes |
+| Setting | What it changes |
 |---|---|
-| `WAVES_PER_CELL` | How many waves run along the wall per cell. More waves give narrower vents and more of them. |
-| `PLAN_WEIGHT` | How the depth is split between the two waves. 0.5 gives round, staggered vents; toward 0.7, the vents join into tall slots; below about 0.35, the columns between vents get too thin. |
-| `CONTACT_L` | How far apart the up-the-frame wave's crests stand: shorter for more, shorter vents, longer for fewer, taller ones. Each crest is a line where the wall touches the cell. |
-| `CHANNEL` | How deep the troughs are: deeper troughs open bigger vents and leave wider air channels beside the cells. |
-| `INTRUDE` | How far the crests press into the cell's land, which sets the size of the contact patches. |
-| `REFLECT` | How far the outside mirrors the inside: 1 is a full mirror; less gives a thicker wall and smaller vents. |
-| `SECTION_PHASE` | Where the up-the-frame crests fall: 90° spaces the contact lines evenly between the bands, 0° the vents. |
-| `PHASE_STEP` | How far the pattern shifts from one cell to the next: 0.5 staggers the vents like brick bond, 0 lines them up in rows. |
+| Waves per cell (`WAVES_PER_CELL`) | How many waves run along the wall per cell. More waves give narrower vents and more of them. |
+| Vent shape (`ALONG_SHARE`) | How the depth is split between the two waves. 0.5 gives round, staggered vents; toward 0.7, the vents join into tall slots; below about 0.35, the columns between vents get too thin. |
+| Wave height (`UP_WAVELENGTH`) | How far apart the up-the-frame wave's crests stand: shorter for more, shorter vents, longer for fewer, taller ones. Each crest is a line where the wall touches the cell. |
+| Trough depth (`CHANNEL`) | How deep the troughs are: deeper troughs open bigger vents and leave wider air channels beside the cells. |
+| Crest press (`CREST_PRESS`) | How far the crests press into the cell's land, which sets the size of the contact patches. |
+| Mirror (`MIRROR`) | How far the outside mirrors the inside: 1 is a full mirror; less gives a thicker wall and smaller vents. |
+| Wave position (`UP_PHASE`) | Where the up-the-frame crests fall: 90° spaces the contact lines evenly between the bands, 0° the vents. |
+| Stagger (`STAGGER`) | How far the pattern shifts from one cell to the next: 0.5 staggers the vents like brick bond, 0 lines them up in rows. |
 
 Whatever you set, the asserts keep the frame printable and strong. They refuse a face steeper than 45°, a tie or
 column between vents narrower than `TIE_MIN` or `COLUMN_SHARE` of the along-the-wall wavelength, and a wall less than

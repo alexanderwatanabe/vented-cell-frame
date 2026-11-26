@@ -14,40 +14,40 @@
 //   openscad -o spacer.stl -D 'CELL="21700"' -D CELL_GAP=2 spacer.scad
 
 /* [Cell] */
-// The cell: a preset (lib/cells.scad), or "custom" with its diameter and length below
+// Cell — a preset, or "custom" with its diameter and length below
 CELL = "21700"; // [18650, 21700, 26650, 32650, 32700, 33140, 40135, 4680, 66160, custom]
-// mm, the body's diameter; 0 takes the preset's
+// Diameter (mm) — the cell's body; 0 takes the preset's
 CELL_D = 0; // [0:0.1:100]
-// mm, the body's length, end face to end face; 0 takes the preset's
+// Length (mm) — the cell's body, end face to end face; 0 takes the preset's
 CELL_L = 0; // [0:0.5:300]
-// mm, how much bigger the printed grip sees the cell than its diameter: from the coupon set (README)
+// Fit offset (mm) — how much bigger your printer and cells make the grip need to be: find it with the coupon set
 FIT_OFFSET = 0; // [-1:0.05:1]
-// mm between neighbouring cells' bodies: 0.8, the printed bores just meet
+// Gap between cells (mm) — between neighbouring cells' bodies; 0.8 is the closest the printed holes allow
 CELL_GAP = 0.8; // [0:0.1:10]
-// mm, the cell pitch, overriding diameter + gap (busbars usually set it); 0 takes diameter + gap
+// Pitch (mm) — centre to centre, overriding diameter + gap: set it when your busbars or strip fix it; 0 to leave it
 PITCH = 0; // [0:0.1:120]
 
 /* [Grip] */
-// mm, the bow's span between its roots: the tested length, and the longest drawn
+// Bow length (mm) — a bow spring's span between its roots: 8 is tested, and the longest drawn
 BOW_SPAN = 8; // [4:0.5:12]
-// mm, the shortest bow drawn: shorter, it is too stiff to spring. Untested below 8
+// Shortest bow (mm) — the shortest drawn; shorter, it is too stiff to spring. Untested below 8
 BOW_SPAN_MIN = 5; // [3:0.5:12]
-// mm, the bow's thickness: two lines of a 0.4 mm nozzle
+// Bow thickness (mm) — two lines of a 0.4 mm nozzle
 BOW_T = 0.9; // [0.4:0.05:2]
-// mm on diameter, how far the bows' middles stand inside the cell: flush was a tad loose
+// Bow press (mm) — how far the bows' middles stand inside the cell, on diameter: more grips harder
 TIP_PRESS = 0.1; // [-0.5:0.05:1]
-// mm on diameter, the bore round the bows past the cell: a plain bore this size is a bit loose
+// Bore clearance (mm) — the hole round the bows, past the cell, on diameter: a plain hole this size is a bit loose
 BORE_CLR = 0.8; // [0.2:0.1:2]
-// mm, the narrowest plastic between two neighbouring pockets: four lines
+// Thinnest neck (mm) — the narrowest plastic between two neighbouring pockets: four lines
 NECK_MIN = 1.6; // [0.8:0.1:4]
-// mm, an arm between two side neighbours is cut where it narrows to this: thinner won't print as a wall
+// Thinnest arm tip (mm) — where an arm between two cells is cut: thinner won't print as a wall
 ARM_TIP_W = 2; // [0.8:0.1:5]
-// mm on diameter, the lands' clearance to the cell: close enough to stop tilt, not to bind
+// Land clearance (mm) — the spacer's lands round each cell, on diameter: close enough to stop tilt, not to bind
 LAND_CLR = 0.2; // [0:0.05:1]
 
 /* [Spacer] */
-// mm, the spacer's length along the cells: its lands far apart, so it can't rock
-H = 18; // [6:1:60]
+// Spacer height (mm) — its length along the cells: lands far apart, so it can't rock
+SPACER_H = 18; // [6:1:60]
 VIEW = "part"; // [part, inplace, top, none]
 
 include <lib/grip.scad>
@@ -73,22 +73,22 @@ module body_2d(land_d) difference() {
 module spacer() {
     // the lands and the plain middle; the chamfers stepped at the ends
     n_ch = ceil(CHAMFER / SLICE);
-    linear_extrude(H) body_2d(LAND_D + 2 * CHAMFER);
-    translate([0, 0, CHAMFER]) linear_extrude(H - 2 * CHAMFER) body_2d(LAND_D);
+    linear_extrude(SPACER_H) body_2d(LAND_D + 2 * CHAMFER);
+    translate([0, 0, CHAMFER]) linear_extrude(SPACER_H - 2 * CHAMFER) body_2d(LAND_D);
     for (i = [0:n_ch - 1], e = [0, 1]) let(z = i * CHAMFER / n_ch, d = LAND_D + 2 * (CHAMFER - z))
-        translate([0, 0, e == 0 ? z : H - z - CHAMFER / n_ch]) linear_extrude(CHAMFER / n_ch + 0.01) body_2d(d);
+        translate([0, 0, e == 0 ? z : SPACER_H - z - CHAMFER / n_ch]) linear_extrude(CHAMFER / n_ch + 0.01) body_2d(d);
     // the bows, contoured: flush with the bore at both ends, TIP at the middle
-    n = ceil(H / SLICE);
-    for (i = [0:n - 1]) let(z0 = i * H / n, z1 = (i + 1) * H / n)
-        translate([0, 0, z0]) linear_extrude(z1 - z0 + 0.01) at_cells() bow_2d(tip_in_band((z0 + z1) / 2, H), SPAN_IN_GAP);
+    n = ceil(SPACER_H / SLICE);
+    for (i = [0:n - 1]) let(z0 = i * SPACER_H / n, z1 = (i + 1) * SPACER_H / n)
+        translate([0, 0, z0]) linear_extrude(z1 - z0 + 0.01) at_cells() bow_2d(tip_in_band((z0 + z1) / 2, SPACER_H), SPAN_IN_GAP);
 }
 
-module cell(h = 60) color("SteelBlue", 0.45) translate([0, 0, -h / 2 + H / 2]) cylinder(d = CELL_FIT, h = h);
+module cell(h = 60) color("SteelBlue", 0.45) translate([0, 0, -h / 2 + SPACER_H / 2]) cylinder(d = CELL_FIT, h = h);
 
 if (VIEW == "part") color("Orange") spacer();
 if (VIEW == "inplace") { color("Orange") spacer(); for (c = CELLS) translate(c) cell(); }
 if (VIEW == "top") { color("Orange") spacer(); for (c = CELLS) translate(c) color("SteelBlue", 0.45) cylinder(d = CELL_FIT, h = 1); }
 
 echo(SPACER = [["cell", CELL], ["body_d", BODY_D], ["cell_fit", CELL_FIT], ["pitch", P], ["bow_span", SPAN_IN_GAP],
-    ["neck", NECK], ["across_arms", 2 * ARM_R], ["inscribed_d", 2 * GAP_R], ["height", H], ["land_d", LAND_D],
-    ["bow_stands_past_land", (LAND_D - TIP) / 2], ["tilt_deg_max", atan(LAND_CLR / H)]]);
+    ["neck", NECK], ["across_arms", 2 * ARM_R], ["inscribed_d", 2 * GAP_R], ["height", SPACER_H], ["land_d", LAND_D],
+    ["bow_stands_past_land", (LAND_D - TIP) / 2], ["tilt_deg_max", atan(LAND_CLR / SPACER_H)]]);

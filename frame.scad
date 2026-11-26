@@ -21,80 +21,83 @@
 //   openscad --backend=manifold -o frame.stl -D 'CELL="21700"' -D NC=5 -D NR=4 frame.scad
 
 /* [Cell] */
-// The cell: a preset (lib/cells.scad), or "custom" with its diameter and length below
+// Cell — a preset, or "custom" with its diameter and length below
 CELL = "21700"; // [18650, 21700, 26650, 32650, 32700, 33140, 40135, 4680, 66160, custom]
-// mm, the body's diameter; 0 takes the preset's
+// Diameter (mm) — the cell's body; 0 takes the preset's
 CELL_D = 0; // [0:0.1:100]
-// mm, the body's length, end face to end face; 0 takes the preset's
+// Length (mm) — the cell's body, end face to end face; 0 takes the preset's
 CELL_L = 0; // [0:0.5:300]
-// mm, how much bigger the printed grip sees the cell than its diameter: from the coupon set (README)
+// Fit offset (mm) — how much bigger your printer and cells make the grip need to be: find it with the coupon set
 FIT_OFFSET = 0; // [-1:0.05:1]
-// mm between neighbouring cells' bodies: 0.8, the printed bores just meet
+// Gap between cells (mm) — between neighbouring cells' bodies; 0.8 is the closest the printed holes allow
 CELL_GAP = 0.8; // [0:0.1:10]
-// mm, the cell pitch, overriding diameter + gap (busbars usually set it); 0 takes diameter + gap
+// Pitch (mm) — centre to centre, overriding diameter + gap: set it when your busbars or strip fix it; 0 to leave it
 PITCH = 0; // [0:0.1:120]
 
 /* [Block] */
-// cells across the block
+// Cells across — the block's columns
 NC = 4; // [2:1:20]
-// cells up the block
+// Cells deep — the block's rows
 NR = 6; // [2:1:20]
-// mm, the printer's build volume, its smallest side: 270 for a Snapmaker U1
+// Printer size (mm) — the build volume's smallest side: 270 for a Snapmaker U1
 PRINT_MAX = 270; // [100:1:1000]
 
+/* [Vents] */
+// The wall between the bands is two sine waves added, one along the wall and one up the frame; it opens where their
+// sum passes the datum the outside mirrors about. The asserts hold every setting printable (Vent limits).
+// Waves per cell — along the wall: 1 puts a crest at each cell's middle and a vent by each gap between cells
+WAVES_PER_CELL = 1; // [1, 2, 3]
+// Vent shape — the along-the-wall wave's share of the depth: 0.5 round vents; toward 0.7 tall slots; under 0.35 thin columns
+ALONG_SHARE = 0.5; // [0:0.05:1]
+// Wave height (mm) — how far apart the waves up the frame stand: shorter, more and smaller vents; each crest touches the cells
+UP_WAVELENGTH = 25; // [10:1:80]
+// Wave position (degrees) — where the waves up the frame fall: 90 spaces the contact lines evenly, 0 the vents
+UP_PHASE = 90; // [0:15:180]
+// Stagger — each cell's shift of the waves up the frame: 0.5 staggers the vents like brick, 0 lines them up in rows
+STAGGER = 0.5; // [0, 0.25, 0.5]
+// Trough depth (mm) — how far the wall stands off the cells between contacts: deeper, bigger vents and air channels
+CHANNEL = 4.5; // [1:0.1:10]
+// Crest press (mm) — how far the crests reach into the cells' land, which trims them: the contact patches' size
+CREST_PRESS = 1.0; // [0:0.1:3]
+// Mirror — how far the outside follows the inside's wave: 1 fully, opening the most; less, a thicker wall, smaller vents
+MIRROR = 1; // [0:0.05:1]
+
 /* [Grip] */
-// where the edge cells' bows sit: auto takes the gap where it holds a bow of BOW_SPAN_MIN, else the wall (README, "Grip")
+// Grip — where the edge cells' bow springs sit: auto takes the gap between cells where a bow fits, else the wall
 GRIP = "auto"; // [auto, gap, wall]
-// mm, the bow's span between its roots: the tested length, and the longest drawn
+// Bow length (mm) — a bow spring's span between its roots: 8 is tested, and the longest drawn
 BOW_SPAN = 8; // [4:0.5:12]
-// mm, the shortest bow drawn: shorter, it is too stiff to spring. Untested below 8
+// Shortest bow (mm) — the shortest drawn; shorter, it is too stiff to spring. Untested below 8
 BOW_SPAN_MIN = 5; // [3:0.5:12]
-// mm, the bow's thickness: two lines of a 0.4 mm nozzle
+// Bow thickness (mm) — two lines of a 0.4 mm nozzle
 BOW_T = 0.9; // [0.4:0.05:2]
-// mm on diameter, how far the bows' middles stand inside the cell: flush was a tad loose
+// Bow press (mm) — how far the bows' middles stand inside the cell, on diameter: more grips harder
 TIP_PRESS = 0.1; // [-0.5:0.05:1]
-// mm on diameter, the bore round the bows past the cell: a plain bore this size is a bit loose
+// Bore clearance (mm) — the hole round the bows, past the cell, on diameter: a plain hole this size is a bit loose
 BORE_CLR = 0.8; // [0.2:0.1:2]
-// mm, the narrowest plastic between two neighbouring pockets: four lines
+// Thinnest neck (mm) — the narrowest plastic between two neighbouring pockets: four lines
 NECK_MIN = 1.6; // [0.8:0.1:4]
-// mm, an arm between two side neighbours is cut where it narrows to this: thinner won't print as a wall
+// Thinnest arm tip (mm) — where an arm between two cells is cut: thinner won't print as a wall
 ARM_TIP_W = 2; // [0.8:0.1:5]
-// mm on diameter, the frame's lands to the cell: wider than a spacer's, so a block slides in without binding
+// Frame land clearance (mm) — the frame round each cell, on diameter: a block of cells slides in without binding
 FRAME_LAND_CLR = 0.6; // [0:0.05:2]
 
-/* [Vents] */
-// The wall between the bands is two sine waves added: one along the wall, one up the frame. The vents open where
-// their sum passes the datum the outside mirrors about. Every value here is held by the asserts below it: no face past
-// 45 degrees, ties and columns between vents wide enough, and enough of the wall open.
-// waves along the wall per cell: 1 puts a crest at each cell's middle and a vent by each gap between cells
-WAVES_PER_CELL = 1; // [1, 2, 3]
-// the along-the-wall wave's share of the travel; the up-the-frame wave has the rest. 0.5: round vents; more: tall slots
-PLAN_WEIGHT = 0.5; // [0:0.05:1]
-// mm, about how far apart the up-the-frame wave's crests stand: its wavelength, and the lines of contact on a cell
-CONTACT_L = 25; // [10:1:80]
-// degrees, where the up-the-frame crests fall: 90 sets the contact lines evenly between the bands, 0 the vents
-SECTION_PHASE = 90; // [0:15:180]
-// of an up-the-frame wave, its shift from one cell to the next: 0.5 staggers the vents like brick bond, 0 lines them up
-PHASE_STEP = 0.5; // [0, 0.25, 0.5]
-// mm, a trough's clearance to the cell: deeper troughs open bigger vents and wider channels beside the cells
-CHANNEL = 4.5; // [1:0.1:10]
-// mm, how far a crest reaches past the cell's land: the land trims it, so a crest touches the cell over a patch
-INTRUDE = 1.0; // [0:0.1:3]
-// how far the outside mirrors the inside's wave: 1 a full mirror, opening wherever the inside passes the datum; less, a thicker wall, smaller vents
-REFLECT = 1; // [0:0.05:1]
-// mm, the shortest tie across the wall between two vents one above the other
+/* [Vent limits] */
+// Shortest tie (mm) — the solid across the wall between two vents one above the other
 TIE_MIN = 6; // [2:0.5:30]
-// the narrowest column between two vents side by side, as a share of the along-the-wall wavelength; TIE_MIN at least
+// Narrowest column — the solid between two vents side by side, as a share of the along-the-wall wavelength
 COLUMN_SHARE = 0.35; // [0:0.01:1]
-// the least share of the wall between the bands that opens: less, and a short frame opens only in slivers
+// Least open — the share of the wall between the bands that must open: less, and the vents are slivers
 OPEN_MIN = 0.1; // [0:0.01:0.5]
-// mm, the wall's thickness in the bands: eight lines
+
+/* [Frame details] */
+// Wall thickness (mm) — in the bands of bows: eight lines
 WALL_T = 3.2; // [1.2:0.1:8]
-// mm, the outside's bumps behind each cell where it is otherwise plain
-BIG_AMP = 4; // [0:0.5:10]
-// mm, each band of bows along the frame: short, to leave more of the frame to the wave
+// Bump depth (mm) — the bumps on the outside behind each cell, where the wall is otherwise plain
+BUMP_DEPTH = 4; // [0:0.5:10]
+// Band height (mm) — each band of bows near the ends: short, to leave more of the frame to the vents
 BAND_H = 5; // [2:0.5:30]
-// mm, the frame stops this far short of each end face, clear of the terminals and busbars
+// End clearance (mm) — the frame stops this far short of each end of the cells, clear of terminals and busbars
 END_CLR = 1; // [0:0.5:20]
 
 /* [View] */
@@ -111,7 +114,7 @@ RIDGE_LAND_CLR = 0.2;   // mm on diameter: the ridges are cut as a spacer's arms
 PLAN_L = P / WAVES_PER_CELL;   // mm, the plan wave's length along the wall: a whole number per cell, so a crest
                                // stands at every cell's middle
 // The pattern along the walls repeats once the section wave's shift from cell to cell comes round whole.
-REPEAT_CELLS = PHASE_STEP == 0 ? 1 : round(1 / PHASE_STEP);
+REPEAT_CELLS = STAGGER == 0 ? 1 : round(1 / STAGGER);
 REPEAT_L = REPEAT_CELLS * P;
 COLUMN_MIN = max(TIE_MIN, COLUMN_SHARE * PLAN_L);   // mm: a column is a share of the wave's length along the wall
 BIG_L = P;              // mm, their length along the wall: one bump per cell
@@ -129,14 +132,14 @@ BANDS = [[SPACER_INSET, SPACER_INSET + BAND_H], [FRAME_L - SPACER_INSET - BAND_H
 LAND_D_F = CELL_FIT + FRAME_LAND_CLR;
 CREST = LAND_D_F / 2;                     // the wall's inner face, from an edge cell's axis: a contact line
 RELIEF_R = CREST + RELIEF_CLR;
-CREST_IN = CREST - INTRUDE;
+CREST_IN = CREST - CREST_PRESS;
 TROUGH = CREST + CHANNEL;                 // the inner face at its trough, from the line through the edge cells' axes
 BAND_OUT = RELIEF_R + WALL_T;             // the outside in the bands: the plain wall's face
-// The datum: a line round the frame that the outside mirrors the inside about, REFLECT of the way. Where the inner
+// The datum: a line round the frame that the outside mirrors the inside about, MIRROR of the way. Where the inner
 // wave passes the datum the two faces have met and the wall opens, its edges the wave's own. The datum sits so that
 // in the bands, where the inside is plain, the wall is WALL_T thick.
-DATUM = RELIEF_R + WALL_T / (1 + REFLECT);
-OUT = DATUM + REFLECT * (DATUM - CREST_IN) + BIG_AMP;   // the outside at its farthest: the frame's size
+DATUM = RELIEF_R + WALL_T / (1 + MIRROR);
+OUT = DATUM + MIRROR * (DATUM - CREST_IN) + BUMP_DEPTH;   // the outside at its farthest: the frame's size
 SIZE = [(NC - 1) * P + 2 * OUT, (NR - 1) * P + 2 * OUT];
 
 function cell_at(i, j) = [i * P, j * P];
@@ -199,22 +202,22 @@ ROUND_S = 2 * (NC + NR - 2) * P + 4 * CORNER_S;   // the section wave's run roun
 // Between the bands, clear of the ridges' blends in and out: where the wave runs.
 OPEN_SPAN = len(BANDS) > 1 ? [BANDS[0][1] + FADE_L, BANDS[len(BANDS) - 1][0] - TAPER_L] : [0, 0];
 // The section wave's crests up the frame, lines of contact on each cell: as many as the wave's height holds at about
-// CONTACT_L apart, and at least one.
-CONTACTS = max(1, round((OPEN_SPAN[1] - OPEN_SPAN[0]) / CONTACT_L));
+// UP_WAVELENGTH apart, and at least one.
+CONTACTS = max(1, round((OPEN_SPAN[1] - OPEN_SPAN[0]) / UP_WAVELENGTH));
 function envelope(z) = OPEN_SPAN[1] - OPEN_SPAN[0] > 2 * RAMP
     ? min(blend((z - OPEN_SPAN[0]) / RAMP), blend((OPEN_SPAN[1] - z) / RAMP)) : 0;
 // The face's travel: 0 is in at its crest, 1 out at its trough. The plan wave runs along each wall, u from its first
 // cell's middle; the section wave runs on round the frame, s along the walls and the corners, and z up it.
 function plan_wave(u) = 0.5 - 0.5 * cos(360 * u / PLAN_L);
 function section_wave(s, z) = let(t = (z - OPEN_SPAN[0]) / (OPEN_SPAN[1] - OPEN_SPAN[0]))
-    0.5 - 0.5 * cos(360 * (CONTACTS * t + PHASE_STEP * s / P) + SECTION_PHASE);
-function wave(plan, s, z) = OPEN_SPAN[1] <= OPEN_SPAN[0] ? 0 : PLAN_WEIGHT * plan + (1 - PLAN_WEIGHT) * section_wave(s, z);
+    0.5 - 0.5 * cos(360 * (CONTACTS * t + STAGGER * s / P) + UP_PHASE);
+function wave(plan, s, z) = OPEN_SPAN[1] <= OPEN_SPAN[0] ? 0 : ALONG_SHARE * plan + (1 - ALONG_SHARE) * section_wave(s, z);
 // The inner face, out from the line through the edge cells' axes: in the bands RELIEF_R; between them the wave.
 function face_r(plan, s, z) = let(w = CREST_IN + (TROUGH - CREST_IN) * wave(plan, s, z)) RELIEF_R + envelope(z) * (w - RELIEF_R);
-// The outside: the inside mirrored about the datum, REFLECT of the way. It is as smooth as the inside and leans
-// REFLECT as steeply. Where the outside is otherwise plain (the bands), it bows out in bumps, one behind each cell
+// The outside: the inside mirrored about the datum, MIRROR of the way. It is as smooth as the inside and leans
+// MIRROR as steeply. Where the outside is otherwise plain (the bands), it bows out in bumps, one behind each cell
 // (bump 1 behind its middle), fading as the wave comes in: the share of the wave not there.
-function out_r(plan, bump, s, z) = DATUM + REFLECT * (DATUM - face_r(plan, s, z)) + BIG_AMP * (1 - envelope(z)) * bump;
+function out_r(plan, bump, s, z) = DATUM + MIRROR * (DATUM - face_r(plan, s, z)) + BUMP_DEPTH * (1 - envelope(z)) * bump;
 function big_bump(u) = 0.5 + 0.5 * cos(360 * u / BIG_L);
 function face_wall(w, u, z) = face_r(plan_wave(u), w[3] + u, z);
 function face_out(w, u, z) = out_r(plan_wave(u), big_bump(u), w[3] + u, z);
@@ -291,13 +294,13 @@ assert(NC >= 2 && NR >= 2, "the frame holds at least 2 x 2 cells");
 assert(GRIP == "auto" || GRIP == "gap" || GRIP == "wall", "GRIP is auto, gap or wall");
 assert(GRIP_USED != "gap" || GAP_SPAN >= BOW_SPAN_MIN, str("the gap between edge cells holds a bow of ", GAP_SPAN,
     " mm, under BOW_SPAN_MIN ", BOW_SPAN_MIN, ": use GRIP = \"wall\", or widen CELL_GAP or PITCH"));
-assert(len(ALL_TIES) == 0 || TIE_SHORTEST >= TIE_MIN, str("the shortest tie between openings is ", TIE_SHORTEST, " mm"));
-assert(len(ALL_COLUMNS) == 0 || COLUMN_NARROWEST >= COLUMN_MIN, str("the narrowest column between openings is ", COLUMN_NARROWEST, " mm"));
+assert(len(ALL_TIES) == 0 || TIE_SHORTEST >= TIE_MIN, str("the shortest tie between vents is ", TIE_SHORTEST, " mm"));
+assert(len(ALL_COLUMNS) == 0 || COLUMN_NARROWEST >= COLUMN_MIN, str("the narrowest column between vents is ", COLUMN_NARROWEST, " mm"));
 assert(TIP < LAND_D_F, "the bows must stand in past the frame's lands");
 assert(max(SIZE[0], SIZE[1], FRAME_L) <= PRINT_MAX, str("the frame is ", SIZE, " x ", FRAME_L, ": bigger than the printer"));
 for (b = BANDS) assert(b[0] >= 0 && b[1] <= FRAME_L, "a band of bows runs past the frame's ends");
-assert(PLAN_WEIGHT >= 0 && PLAN_WEIGHT <= 1, "PLAN_WEIGHT is a share, 0 to 1");
-assert(abs(PHASE_STEP * ROUND_S / P - round(PHASE_STEP * ROUND_S / P)) < 1e-6,
+assert(ALONG_SHARE >= 0 && ALONG_SHARE <= 1, "ALONG_SHARE is a share, 0 to 1");
+assert(abs(STAGGER * ROUND_S / P - round(STAGGER * ROUND_S / P)) < 1e-6,
     "the section wave's shift doesn't close round the frame: it would meet itself out of step at a corner");
 CORNER_PACE = [for (o = [false, true], wi = [0:3], c = corner_faces(wi, o)) c[1] * PI / 2 / CORNER_S];   // at t = 0
 assert(min(CORNER_PACE) > 0 && max(CORNER_PACE) < 3,
@@ -310,9 +313,9 @@ assert(STEEPEST_OUT <= SLOPE_MAX, str("the outside leans ", atan(STEEPEST_OUT), 
 assert(TROUGH > DATUM, "the wave never passes the datum: the wall never opens");
 assert(len(BANDS) < 2 || (OPEN_FRACTION > 0 && OPEN_FRACTION >= OPEN_MIN), str("only ", OPEN_FRACTION,
     " of the wall opens, under OPEN_MIN ", OPEN_MIN, ": the frame is too short for whole vents"));
-assert(REFLECT >= 0 && REFLECT <= 1, "REFLECT is a share, 0 to 1");
+assert(MIRROR >= 0 && MIRROR <= 1, "MIRROR is a share, 0 to 1");
 assert(WAVES_PER_CELL >= 1 && WAVES_PER_CELL == round(WAVES_PER_CELL), "WAVES_PER_CELL is a whole number, so every cell's middle is a crest");
-assert(PHASE_STEP == 0 || abs(1 / PHASE_STEP - round(1 / PHASE_STEP)) < 1e-6, "PHASE_STEP is 0 or 1 / n of a wave, so the pattern repeats");
+assert(STAGGER == 0 || abs(1 / STAGGER - round(1 / STAGGER)) < 1e-6, "STAGGER is 0 or 1 / n of a wave, so the pattern repeats");
 
 module outer_2d() translate([-OUT - 1, -OUT - 1]) square(SIZE + [2, 2]);   // just past the walls' own faces
 // The cells' outline at distance r out from the lines through the edge cells' axes.
@@ -450,8 +453,8 @@ if (VIEW == "top") { color("Orange") frame(); for (i = [0:NC - 1], j = [0:NR - 1
 echo(FRAME = [["cell", CELL], ["body", [BODY_D, BODY_L]], ["cell_fit", CELL_FIT], ["pitch", P], ["cells", [NC, NR]],
     ["size", SIZE], ["length", FRAME_L], ["land_d", LAND_D_F], ["grip", GRIP_USED], ["bow_span", GRIP_SPAN],
     ["gap_span", GAP_SPAN], ["bows", N_BOWS], ["bands", BANDS], ["taper_l", TAPER_L],
-    ["contacts", len(BANDS) > 1 ? CONTACTS : 0], ["plan_weight", PLAN_WEIGHT], ["wall_t", WALL_T], ["channel", CHANNEL],
-    ["steepest_deg", atan(STEEPEST)], ["steepest_out_deg", atan(STEEPEST_OUT)], ["big_amp", BIG_AMP],
+    ["contacts", len(BANDS) > 1 ? CONTACTS : 0], ["plan_weight", ALONG_SHARE], ["wall_t", WALL_T], ["channel", CHANNEL],
+    ["steepest_deg", atan(STEEPEST)], ["steepest_out_deg", atan(STEEPEST_OUT)], ["big_amp", BUMP_DEPTH],
     ["open_fraction", OPEN_FRACTION], ["tie_shortest", TIE_SHORTEST], ["column_narrowest", COLUMN_NARROWEST],
     ["vent_tallest", VENT_TALLEST], ["vent_widest", VENT_WIDEST], ["repeat_l", REPEAT_L],
     ["bow_stands_past_land", (LAND_D_F - TIP) / 2]]);

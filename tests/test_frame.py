@@ -56,7 +56,7 @@ def test_small_cells_take_the_wall_grip_with_a_full_bow(tmp_path):
 @pytest.mark.parametrize("overrides, refusal", [
     (dict(CHANNEL=14, TIE_MIN=0, COLUMN_SHARE=0), "past 45 it would need support"),
     (dict(CHANNEL=2), "never passes the datum"),
-    (dict(PLAN_WEIGHT=1.5), "PLAN_WEIGHT is a share"),
+    (dict(ALONG_SHARE=1.5), "ALONG_SHARE is a share"),
     (dict(NC=8), "bigger than the printer"),
     (dict(CELL_L=50), "too short for its wave"),
     (dict(CELL_L=56), "the frame is too short for whole vents"),
@@ -68,13 +68,13 @@ def test_frame_refuses(tmp_path, overrides, refusal):
 
 
 def test_short_ties_between_openings_are_refused(tmp_path):
-    ok, text = evaluate(tmp_path, "frame", **TESTED, WAVES_PER_CELL=2, PLAN_WEIGHT=0.6, CHANNEL=6, REFLECT=0.5, COLUMN_SHARE=0)
-    assert not ok and "shortest tie between openings" in text
+    ok, text = evaluate(tmp_path, "frame", **TESTED, WAVES_PER_CELL=2, ALONG_SHARE=0.6, CHANNEL=6, MIRROR=0.5, COLUMN_SHARE=0)
+    assert not ok and "shortest tie between vents" in text
 
 
 def test_narrow_columns_between_openings_are_refused(tmp_path):
-    ok, text = evaluate(tmp_path, "frame", **TESTED, PLAN_WEIGHT=0.3)
-    assert not ok and "narrowest column between openings" in text
+    ok, text = evaluate(tmp_path, "frame", **TESTED, ALONG_SHARE=0.3)
+    assert not ok and "narrowest column between vents" in text
 
 
 def test_the_gap_grip_is_refused_where_the_gap_holds_no_bow(tmp_path):
@@ -111,8 +111,8 @@ def test_a_preset_named_as_a_number_is_found(tmp_path):
 
 
 @pytest.mark.parametrize("overrides", [
-    dict(PLAN_WEIGHT=0.7), dict(PHASE_STEP=0), dict(PHASE_STEP=0.25), dict(REFLECT=0.7), dict(CONTACT_L=15),
-    dict(CONTACT_L=40), dict(SECTION_PHASE=0),
+    dict(ALONG_SHARE=0.7), dict(STAGGER=0), dict(STAGGER=0.25), dict(MIRROR=0.7), dict(UP_WAVELENGTH=15),
+    dict(UP_WAVELENGTH=40), dict(UP_PHASE=0),
 ], ids=["slots", "aligned", "quarter-step", "thicker", "short-waves", "long-waves", "phase-0"])
 def test_the_vents_can_be_reshaped(tmp_path, overrides):
     ok, text = evaluate(tmp_path, "frame", **TESTED, VIEW='"none"', **overrides)
@@ -123,7 +123,7 @@ def test_the_vents_can_be_reshaped(tmp_path, overrides):
 
 def test_more_vertical_waves_make_shorter_vents(tmp_path):
     def tallest(contact_l):
-        ok, text = evaluate(tmp_path, "frame", **TESTED, VIEW='"none"', CONTACT_L=contact_l)
+        ok, text = evaluate(tmp_path, "frame", **TESTED, VIEW='"none"', UP_WAVELENGTH=contact_l)
         assert ok, text
         return echoed(text, "FRAME")["vent_tallest"]
     assert tallest(15) < tallest(25) < tallest(40)
@@ -141,5 +141,5 @@ def test_the_wall_map_covers_one_repeat_and_the_full_height(tmp_path):
 
 
 def test_a_phase_step_that_doesnt_repeat_is_refused(tmp_path):
-    ok, text = evaluate(tmp_path, "frame", **TESTED, VIEW='"none"', PHASE_STEP=0.3)
-    assert not ok and "PHASE_STEP is 0 or 1 / n" in text
+    ok, text = evaluate(tmp_path, "frame", **TESTED, VIEW='"none"', STAGGER=0.3)
+    assert not ok and "STAGGER is 0 or 1 / n" in text
