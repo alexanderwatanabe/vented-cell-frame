@@ -59,3 +59,8 @@ def test_generated_files_match_the_presets():
 def test_the_configurators_form_matches_the_parts():
     run = subprocess.run([sys.executable, str(ROOT / "tools/gen_params.py"), "--check"], text=True, capture_output=True)
     assert run.returncode == 0, run.stdout + run.stderr
+
+
+def test_the_single_page_is_built_from_the_configurator():
+    run = subprocess.run([sys.executable, str(ROOT / "tools/build_page.py"), "--check"], text=True, capture_output=True)
+    assert run.returncode == 0, run.stdout + run.stderr

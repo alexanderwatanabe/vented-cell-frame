@@ -2,22 +2,21 @@
 // Runs one OpenSCAD job in WebAssembly and posts back its echo, its log and any STL. OpenSCAD's main() runs once per
 // instance, so every job gets a fresh instance of the compiled module the page hands over.
 //
-// in:  { kind: "init", wasm: WebAssembly.Module, openscadUrl }
+// in:  { kind: "init", wasm: WebAssembly.Module | ArrayBuffer, openscadUrl, sources: [[path, text]], font: Uint8Array }
 //      { id, kind: "check" | "render", part, defines: { NAME: "literal" } }
 // out: { id, ok, echo, log, stl?: ArrayBuffer, ms } or { id, error }
 
-const SOURCES = ["frame.scad", "spacer.scad", "coupon.scad", "lib/grip.scad", "lib/cells.scad"];
+// The page hands over the .scad sources and the font, so this runs alike served or from one saved file.
 const FONT = "NotoSans-Regular.ttf";
 let setup;
 
-async function load(wasm, openscadUrl) {
-  const fetchText = async (p) => [p, await (await fetch(new URL("../" + p, import.meta.url), { cache: "no-cache" })).text()];
-  const [{ default: OpenSCAD }, sources, font] = await Promise.all([
+// A page opened from a file has no origin to share a compiled module across, so it sends the bytes to compile here.
+async function load({ wasm, openscadUrl, sources, font }) {
+  const [{ default: OpenSCAD }, module] = await Promise.all([
     import(openscadUrl),
-    Promise.all(SOURCES.map(fetchText)),
-    fetch(new URL("fonts/" + FONT, import.meta.url)).then((r) => r.arrayBuffer()),
+    wasm instanceof WebAssembly.Module ? wasm : WebAssembly.compile(wasm),
   ]);
-  return { OpenSCAD, wasm, sources, font: new Uint8Array(font) };
+  return { OpenSCAD, wasm: module, sources, font };
 }
 
 async function run({ kind, part, defines }) {
@@ -67,7 +66,7 @@ async function run({ kind, part, defines }) {
 
 self.onmessage = async ({ data }) => {
   if (data.kind === "init") {
-    setup = load(data.wasm, data.openscadUrl);
+    setup = load(data);
     return;
   }
   try {

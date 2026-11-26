@@ -230,11 +230,34 @@ function fieldLabel(name) {
   return p ? caption(p).label.replace(/\s*\([^)]*\)$/, "") : null;   // without its unit, to read inside a sentence
 }
 
+// ---- the page's files. Served, it fetches them; built into one file (tools/build_page.py), they are in VCF_EMBED.
+const EMBED = globalThis.VCF_EMBED;
+const SOURCES = ["frame.scad", "spacer.scad", "coupon.scad", "lib/grip.scad", "lib/cells.scad"];
+async function loadFiles() {
+  if (EMBED) {
+    const font = Uint8Array.from(atob(EMBED.font), (c) => c.charCodeAt(0));
+    return { params: EMBED.params, cells: EMBED.cells, sources: EMBED.sources, font };
+  }
+  const text = async (p) => [p, await (await fetch("../" + p, { cache: "no-cache" })).text()];
+  const [params, cells, sources, font] = await Promise.all([
+    fetch("params.json").then((r) => r.json()),
+    fetch("../presets/cells.json").then((r) => r.json()),
+    Promise.all(SOURCES.map(text)),
+    fetch("fonts/NotoSans-Regular.ttf").then((r) => r.arrayBuffer()).then((b) => new Uint8Array(b)),
+  ]);
+  return { params, cells, sources, font };
+}
+
 // ---- OpenSCAD in workers: one for checks, one for renders. A newer check replaces an older one outright.
-let wasm;
+let wasm, wasmBytes, files, workerUrl;
+// From a file the page's origin is opaque, and a compiled module can't cross to a worker: send the bytes instead.
+const FROM_FILE = location.protocol === "file:";
 function spawn() {
-  const w = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
-  w.postMessage({ kind: "init", wasm, openscadUrl: OPENSCAD + "openscad.js" });
+  workerUrl ??= EMBED ? URL.createObjectURL(new Blob([EMBED.worker], { type: "text/javascript" })) : new URL("./worker.js", import.meta.url);
+  // a classic worker: a page opened from a file can start one from a blob, though not a module worker
+  const w = new Worker(workerUrl);
+  w.postMessage({ kind: "init", wasm: FROM_FILE ? wasmBytes.slice(0) : wasm, openscadUrl: OPENSCAD + "openscad.js",
+    sources: files.sources, font: files.font });
   return w;
 }
 function job(worker, msg) {
@@ -495,12 +518,15 @@ function showStep(key) {
 
 async function main() {
   readHash();
-  const [params, cells, wasmModule] = await Promise.all([
-    fetch("params.json").then((r) => r.json()),
-    fetch("../presets/cells.json").then((r) => r.json()),
-    WebAssembly.compileStreaming(fetch(OPENSCAD + "openscad.wasm")).catch(async () =>
-      WebAssembly.compile(await (await fetch(OPENSCAD + "openscad.wasm")).arrayBuffer())),
+  const [loaded, wasmModule] = await Promise.all([
+    loadFiles(),
+    FROM_FILE
+      ? fetch(OPENSCAD + "openscad.wasm").then((r) => r.arrayBuffer()).then((b) => { wasmBytes = b; return null; })
+      : WebAssembly.compileStreaming(fetch(OPENSCAD + "openscad.wasm")).catch(async () =>
+        WebAssembly.compile(await (await fetch(OPENSCAD + "openscad.wasm")).arrayBuffer())),
   ]);
+  files = loaded;
+  const { params, cells } = loaded;
   PARAMS = params;
   CELLS = cells.cells;
   for (const q of [...params.frame, ...params.spacer]) if (state.set[q.name] === String(q.initial)) delete state.set[q.name];
