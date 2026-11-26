@@ -15,15 +15,16 @@ export function createViewer(host) {
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 5000);
   camera.up.set(0, 0, 1);
   camera.position.set(250, -300, 220);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.6));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.8);
+  // a white part: light from above, a blue fill from the plate below, kept soft so its vents still read
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x3a52b8, 1.7));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.0);
   sun.position.set(200, -150, 400);
   scene.add(sun);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
 
   let mesh = null;
-  const material = new THREE.MeshStandardMaterial({ color: 0x2f4fe0, roughness: 0.45, metalness: 0.05 });
+  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.75, metalness: 0 });
 
   let queued = false;
   function draw() {
