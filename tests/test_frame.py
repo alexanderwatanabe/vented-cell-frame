@@ -68,12 +68,12 @@ def test_frame_refuses(tmp_path, overrides, refusal):
 
 
 def test_short_ties_between_openings_are_refused(tmp_path):
-    ok, text = evaluate(tmp_path, "frame", **TESTED, PLAN_L="P / 2", PLAN_WEIGHT=0.6, CHANNEL=6, REFLECT=0.5, COLUMN_SHARE=0)
+    ok, text = evaluate(tmp_path, "frame", **TESTED, WAVES_PER_CELL=2, PLAN_WEIGHT=0.6, CHANNEL=6, REFLECT=0.5, COLUMN_SHARE=0)
     assert not ok and "shortest tie between openings" in text
 
 
 def test_narrow_columns_between_openings_are_refused(tmp_path):
-    ok, text = evaluate(tmp_path, "frame", **TESTED, PLAN_L="P / 2", PLAN_WEIGHT=0.35, CHANNEL=5.5, REFLECT=0.5, TIE_MIN=0)
+    ok, text = evaluate(tmp_path, "frame", **TESTED, PLAN_WEIGHT=0.3)
     assert not ok and "narrowest column between openings" in text
 
 
@@ -108,3 +108,38 @@ def test_a_preset_named_as_a_number_is_found(tmp_path):
     ok, text = evaluate(tmp_path, "frame", CELL=18650, VIEW='"none"')
     assert ok, text
     assert echoed(text, "FRAME")["body"] == [18.5, 65]
+
+
+@pytest.mark.parametrize("overrides", [
+    dict(PLAN_WEIGHT=0.7), dict(PHASE_STEP=0), dict(PHASE_STEP=0.25), dict(REFLECT=0.7), dict(CONTACT_L=15),
+    dict(CONTACT_L=40), dict(SECTION_PHASE=0),
+], ids=["slots", "aligned", "quarter-step", "thicker", "short-waves", "long-waves", "phase-0"])
+def test_the_vents_can_be_reshaped(tmp_path, overrides):
+    ok, text = evaluate(tmp_path, "frame", **TESTED, VIEW='"none"', **overrides)
+    assert ok, text
+    frame = echoed(text, "FRAME")
+    assert frame["steepest_deg"] <= 45 and frame["steepest_out_deg"] <= 45 and frame["open_fraction"] >= 0.1
+
+
+def test_more_vertical_waves_make_shorter_vents(tmp_path):
+    def tallest(contact_l):
+        ok, text = evaluate(tmp_path, "frame", **TESTED, VIEW='"none"', CONTACT_L=contact_l)
+        assert ok, text
+        return echoed(text, "FRAME")["vent_tallest"]
+    assert tallest(15) < tallest(25) < tallest(40)
+
+
+def test_the_wall_map_covers_one_repeat_and_the_full_height(tmp_path):
+    ok, text = evaluate(tmp_path, "frame", **TESTED, VIEW='"none"')
+    assert ok, text
+    import ast, re
+    ds, dz, contact, pitch, rows = ast.literal_eval(re.search(r"^ECHO: WALL_MAP = (.+)$", text, re.M).group(1))
+    assert pitch == 34 and contact < 0
+    assert len(rows[0]) * ds == pytest.approx(2 * 34, abs=ds)   # brick bond repeats every two cells
+    assert (len(rows) - 1) * dz == pytest.approx(138, abs=dz)
+    assert any(v > 0 for row in rows for v in row)              # some of it is open
+
+
+def test_a_phase_step_that_doesnt_repeat_is_refused(tmp_path):
+    ok, text = evaluate(tmp_path, "frame", **TESTED, VIEW='"none"', PHASE_STEP=0.3)
+    assert not ok and "PHASE_STEP is 0 or 1 / n" in text

@@ -63,13 +63,28 @@ ARM_TIP_W = 2; // [0.8:0.1:5]
 FRAME_LAND_CLR = 0.6; // [0:0.05:2]
 
 /* [Vents] */
-// mm, about how far apart the wave's lines of contact stand up each cell; their count follows from its length
+// The wall between the bands is two sine waves added: one along the wall, one up the frame. The vents open where
+// their sum passes the datum the outside mirrors about. Every value here is held by the asserts below it: no face past
+// 45 degrees, ties and columns between vents wide enough, and enough of the wall open.
+// waves along the wall per cell: 1 puts a crest at each cell's middle and a vent by each gap between cells
+WAVES_PER_CELL = 1; // [1, 2, 3]
+// the along-the-wall wave's share of the travel; the up-the-frame wave has the rest. 0.5: round vents; more: tall slots
+PLAN_WEIGHT = 0.5; // [0:0.05:1]
+// mm, about how far apart the up-the-frame wave's crests stand: its wavelength, and the lines of contact on a cell
 CONTACT_L = 25; // [10:1:80]
-// mm, a trough's clearance to the cell: the channel the draft rises through
+// degrees, where the up-the-frame crests fall: 90 sets the contact lines evenly between the bands, 0 the vents
+SECTION_PHASE = 90; // [0:15:180]
+// of an up-the-frame wave, its shift from one cell to the next: 0.5 staggers the vents like brick bond, 0 lines them up
+PHASE_STEP = 0.5; // [0, 0.25, 0.5]
+// mm, a trough's clearance to the cell: deeper troughs open bigger vents and wider channels beside the cells
 CHANNEL = 4.5; // [1:0.1:10]
-// mm, the shortest tie across the wall between two openings one above the other
+// mm, how far a crest reaches past the cell's land: the land trims it, so a crest touches the cell over a patch
+INTRUDE = 1.0; // [0:0.1:3]
+// how far the outside mirrors the inside's wave: 1 a full mirror, opening wherever the inside passes the datum; less, a thicker wall, smaller vents
+REFLECT = 1; // [0:0.05:1]
+// mm, the shortest tie across the wall between two vents one above the other
 TIE_MIN = 6; // [2:0.5:30]
-// the narrowest column between two openings side by side, as a share of the pitch; TIE_MIN at the least
+// the narrowest column between two vents side by side, as a share of the along-the-wall wavelength; TIE_MIN at least
 COLUMN_SHARE = 0.35; // [0:0.01:1]
 // the least share of the wall between the bands that opens: less, and a short frame opens only in slivers
 OPEN_MIN = 0.1; // [0:0.01:0.5]
@@ -91,20 +106,15 @@ include <lib/grip.scad>
 RELIEF_CLR = 1.2;       // mm, in the bands the wall stands this far back from the edge cells: the bows grip there
 SPACER_INSET = 1;       // mm from each end of the frame to its band of bows
 RIDGE_LAND_CLR = 0.2;   // mm on diameter: the ridges are cut as a spacer's arms are, at a spacer's lands, as tested
-COLUMN_MIN = max(TIE_MIN, COLUMN_SHARE * P);   // mm: the columns' web is a share of the wave's length along the wall
 // The wall's inner face between the bands is two sine waves added: one along the wall (plan), one up the frame
-// (section), out of phase. Equal weights make them the same size; unequal, a major and a minor wave.
-PLAN_L = P;             // mm, the plan wave's length along the wall: one per cell, its crest at each cell's middle, so the
-                        // columns between openings stay wide
-PLAN_WEIGHT = 0.5;      // the plan wave's share of the face's travel; the section wave has the rest: an even share keeps
-                        // both the columns and the ties between the openings wide
-SECTION_PHASE = 90;     // degrees, the section wave's phase against the plan wave's
-INTRUDE = 1.0;          // mm, a crest reaches this far past the land; the land then trims it to the cell's curve, so a
-                        // crest touches the cell over a patch, not a point
+// (section). Equal weights make them the same size; unequal, a major and a minor wave.
+PLAN_L = P / WAVES_PER_CELL;   // mm, the plan wave's length along the wall: a whole number per cell, so a crest
+                               // stands at every cell's middle
+// The pattern along the walls repeats once the section wave's shift from cell to cell comes round whole.
+REPEAT_CELLS = PHASE_STEP == 0 ? 1 : round(1 / PHASE_STEP);
+REPEAT_L = REPEAT_CELLS * P;
+COLUMN_MIN = max(TIE_MIN, COLUMN_SHARE * PLAN_L);   // mm: a column is a share of the wave's length along the wall
 BIG_L = P;              // mm, their length along the wall: one bump per cell
-REFLECT = 1;            // how far the outside mirrors the inside's wave about the datum: 1 a full mirror, 0 flat
-PHASE_STEP = 1 / 2;     // of a section wave, its shift up the frame per cell along the wall: openings in neighbouring
-                        // gaps alternate like brick bond, and round the frame it closes in whole periods
 CORNER_S = P;           // mm of the section wave each corner takes, as if it were one more cell: about its arc's length,
                         // so the wave runs on round it at the walls' pace
 CORNER_N = 90;          // steps round a corner
@@ -226,10 +236,9 @@ CORNER_FACES = [for (outside = [false, true]) [for (w = WALLS) [for (z = GRID_Z)
     [for (t = CORNER_T) f(corner_s(w, max(0, min(1, t)), r0, r1))]]]];
 function corner_faces(wi, outside) = CORNER_FACES[outside ? 1 : 0][wi];
 function grid_u(len) = [for (i = [0:ceil(len / U_STEP)]) min(len, i * U_STEP)];
-// The walls' pattern repeats every two cells along them: the plan wave every cell, and the section wave shifts half a
-// period from one cell to the next. So the checks on the walls sample one repeat, s over [0, 2P), as the ties and the
-// columns do; the corners, each with its own run of the wave, are sampled whole.
-PATTERN_S = [for (i = [0:ceil(2 * P / U_STEP) - 1]) i * U_STEP];
+// The walls' pattern repeats every REPEAT_L along them, so the checks on the walls sample one repeat, s over
+// [0, REPEAT_L), as the ties and the columns do; the corners, each with its own run of the wave, are sampled whole.
+PATTERN_S = [for (i = [0:ceil(REPEAT_L / U_STEP) - 1]) i * U_STEP];
 function face_at(s, z, outside) = outside ? out_r(plan_wave(s), big_bump(s), s, z) : face_r(plan_wave(s), s, z);
 // The steepest the faces lean from vertical, walls and corners: the print's overhang. The outside overhangs too where
 // it leans out going up.
@@ -252,16 +261,31 @@ TIE_ZS = [for (k = [0:floor((OPEN_SPAN[1] - OPEN_SPAN[0]) / TIE_DZ)]) OPEN_SPAN[
 function opens(s) = [for (z = TIE_ZS) face_r(plan_wave(s), s, z) > DATUM];
 function next_open(o, i) = i >= len(o) ? -1 : o[i] ? i : next_open(o, i + 1);
 function ties(o) = [for (i = [1:len(o) - 1]) if (!o[i] && o[i - 1]) let(j = next_open(o, i)) if (j > 0) (j - i) * TIE_DZ];
-ALL_TIES = OPEN_SPAN[1] <= OPEN_SPAN[0] ? [] : [for (k = [0:round(2 * P / PLAN_L) - 1], t = ties(opens((k + 0.5) * PLAN_L))) t];
+ALL_TIES = OPEN_SPAN[1] <= OPEN_SPAN[0] ? [] : [for (k = [0:round(REPEAT_L / PLAN_L) - 1], t = ties(opens((k + 0.5) * PLAN_L))) t];
 TIE_SHORTEST = len(ALL_TIES) == 0 ? 0 : min(ALL_TIES);
-// The columns: at each height where the wave is at full depth, across four cells of wall, the solid between two
+// The columns: at each height where the wave is at full depth, across two repeats of the wall, the solid between two
 // openings side by side.
 COL_DS = 0.5;
-COL_SS = [for (k = [0:floor(4 * P / COL_DS)]) k * COL_DS];
+COL_SS = [for (k = [0:floor(2 * REPEAT_L / COL_DS)]) k * COL_DS];
 COL_ZS = [for (z = TIE_ZS) if (envelope(z) > 0.99) z];
 function opens_across(z) = [for (sv = COL_SS) face_r(plan_wave(sv), sv, z) > DATUM];
 ALL_COLUMNS = OPEN_SPAN[1] <= OPEN_SPAN[0] ? [] : [for (k = [0:2:len(COL_ZS) - 1], c = ties(opens_across(COL_ZS[k]))) c * COL_DS / TIE_DZ];
 COLUMN_NARROWEST = len(ALL_COLUMNS) == 0 ? 0 : min(ALL_COLUMNS);
+// The vents' size: the tallest along the trough lines, where they fall, and the widest across the wall where the wave
+// is at full depth.
+function next_shut(o, i) = i >= len(o) ? len(o) : !o[i] ? i : next_shut(o, i + 1);
+function runs_open(o) = [for (i = [0:len(o) - 1]) if (o[i] && (i == 0 || !o[i - 1])) next_shut(o, i) - i];
+VENT_TALLEST = OPEN_SPAN[1] <= OPEN_SPAN[0] ? 0
+    : max(concat([0], [for (k = [0:round(REPEAT_L / PLAN_L) - 1], r = runs_open(opens((k + 0.5) * PLAN_L))) r * TIE_DZ]));
+VENT_WIDEST = len(COL_ZS) == 0 ? 0
+    : max(concat([0], [for (k = [0:2:len(COL_ZS) - 1], r = runs_open(opens_across(COL_ZS[k]))) r * COL_DS]));
+
+// The wall unrolled, for a view of the pattern: one repeat along it, its full height, the inside face's distance past
+// the datum (past it, the wall is open) at about 90 x 150 points.
+MAP_DS = max(U_STEP, REPEAT_L / 90);
+MAP_DZ = max(Z_STEP, FRAME_L / 150);
+WALL_MAP = [for (z = [0:MAP_DZ:FRAME_L]) [for (s = [0:MAP_DS:REPEAT_L - MAP_DS / 2])
+    round(10 * (face_r(plan_wave(s), s, z) - DATUM)) / 10]];
 
 assert(NC >= 2 && NR >= 2, "the frame holds at least 2 x 2 cells");
 assert(GRIP == "auto" || GRIP == "gap" || GRIP == "wall", "GRIP is auto, gap or wall");
@@ -287,7 +311,8 @@ assert(TROUGH > DATUM, "the wave never passes the datum: the wall never opens");
 assert(len(BANDS) < 2 || (OPEN_FRACTION > 0 && OPEN_FRACTION >= OPEN_MIN), str("only ", OPEN_FRACTION,
     " of the wall opens, under OPEN_MIN ", OPEN_MIN, ": the frame is too short for whole vents"));
 assert(REFLECT >= 0 && REFLECT <= 1, "REFLECT is a share, 0 to 1");
-assert(abs(P / PLAN_L - round(P / PLAN_L)) < 1e-6, "PLAN_L must divide the pitch, so every cell's middle is a crest");
+assert(WAVES_PER_CELL >= 1 && WAVES_PER_CELL == round(WAVES_PER_CELL), "WAVES_PER_CELL is a whole number, so every cell's middle is a crest");
+assert(PHASE_STEP == 0 || abs(1 / PHASE_STEP - round(1 / PHASE_STEP)) < 1e-6, "PHASE_STEP is 0 or 1 / n of a wave, so the pattern repeats");
 
 module outer_2d() translate([-OUT - 1, -OUT - 1]) square(SIZE + [2, 2]);   // just past the walls' own faces
 // The cells' outline at distance r out from the lines through the edge cells' axes.
@@ -428,4 +453,8 @@ echo(FRAME = [["cell", CELL], ["body", [BODY_D, BODY_L]], ["cell_fit", CELL_FIT]
     ["contacts", len(BANDS) > 1 ? CONTACTS : 0], ["plan_weight", PLAN_WEIGHT], ["wall_t", WALL_T], ["channel", CHANNEL],
     ["steepest_deg", atan(STEEPEST)], ["steepest_out_deg", atan(STEEPEST_OUT)], ["big_amp", BIG_AMP],
     ["open_fraction", OPEN_FRACTION], ["tie_shortest", TIE_SHORTEST], ["column_narrowest", COLUMN_NARROWEST],
+    ["vent_tallest", VENT_TALLEST], ["vent_widest", VENT_WIDEST], ["repeat_l", REPEAT_L],
     ["bow_stands_past_land", (LAND_D_F - TIP) / 2]]);
+// [step along, step up, the contact level (past which, going in, the face touches a cell's land), the cells' middles'
+// spacing, the map's rows from the bottom up]
+echo(WALL_MAP = [MAP_DS, MAP_DZ, CREST - DATUM, P, WALL_MAP]);

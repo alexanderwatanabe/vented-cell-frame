@@ -99,6 +99,28 @@ spring. For the same reason they have no gap spacers unless you widen `CELL_GAP`
 **Tested:** the gap grip with an 8 mm bow, on a 33140 cell at a 34 mm pitch. The wall grip, and gap bows shorter than
 8 mm (the 26650's is 5.6 mm), are untested. The coupon set is the test, so print it first.
 
+## Shaping the vents
+
+Between the bands, the wall's inside face is two sine waves added together. One runs along the wall, with a crest at
+each cell's middle; the other runs up the frame. The outside mirrors the inside about a datum, and the wall opens
+wherever the inside passes it. Each input changes the vents in its own way:
+
+| Input | What it changes |
+|---|---|
+| `WAVES_PER_CELL` | How many waves run along the wall per cell. More waves give narrower vents and more of them. |
+| `PLAN_WEIGHT` | How the depth is split between the two waves. 0.5 gives round, staggered vents; toward 0.7, the vents join into tall slots; below about 0.35, the columns between vents get too thin. |
+| `CONTACT_L` | How far apart the up-the-frame wave's crests stand: shorter for more, shorter vents, longer for fewer, taller ones. Each crest is a line where the wall touches the cell. |
+| `CHANNEL` | How deep the troughs are: deeper troughs open bigger vents and leave wider air channels beside the cells. |
+| `INTRUDE` | How far the crests press into the cell's land, which sets the size of the contact patches. |
+| `REFLECT` | How far the outside mirrors the inside: 1 is a full mirror; less gives a thicker wall and smaller vents. |
+| `SECTION_PHASE` | Where the up-the-frame crests fall: 90° spaces the contact lines evenly between the bands, 0° the vents. |
+| `PHASE_STEP` | How far the pattern shifts from one cell to the next: 0.5 staggers the vents like brick bond, 0 lines them up in rows. |
+
+Whatever you set, the asserts keep the frame printable and strong. They refuse a face steeper than 45°, a tie or
+column between vents narrower than `TIE_MIN` or `COLUMN_SHARE` of the along-the-wall wavelength, and a wall less than
+`OPEN_MIN` open. The configurator draws the wall unrolled as you change values, and lists the tallest and widest vent,
+so you can see the result before rendering.
+
 ## Cell presets
 
 Presets live in `presets/cells.json`. After editing that file, run `uv run tools/gen_cells.py`; it writes
@@ -130,8 +152,8 @@ one line of contact each. 18350, 18500 and sub-C cells are too short.
 A design that breaks a rule stops with a message rather than drawing an unprintable or weak part:
 
 - a face steeper than 45°;
-- a tie across the wall shorter than `TIE_MIN`, or a column narrower than `COLUMN_SHARE` of the pitch (`TIE_MIN` at
-  least);
+- a tie across the wall shorter than `TIE_MIN`, or a column narrower than `COLUMN_SHARE` of the along-the-wall
+  wavelength (`TIE_MIN` at least);
 - a wave that never opens the wall, opens less than `OPEN_MIN` of it, or doesn't close evenly round the frame;
 - a frame bigger than `PRINT_MAX`, or too short for its wave;
 - a gap grip where the gap holds no bow.

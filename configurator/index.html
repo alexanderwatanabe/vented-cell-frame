@@ -69,7 +69,14 @@
   #derived { border-collapse: collapse; width: 100%; align-self: start; font-variant-numeric: tabular-nums; }
   #derived th { text-align: left; font-weight: 400; color: var(--muted); padding: 3px 8px 3px 0; }
   #derived td { text-align: right; padding: 3px 0; }
-  #derived.stale { opacity: 0.45; }
+  #derived.stale, #wallmap.stale { opacity: 0.45; }
+  .side { display: grid; gap: 14px; align-content: start; }
+  #wallmap { margin: 0; }
+  #wallmap canvas { display: block; border-bottom: 1px solid var(--line); }
+  #wallmap figcaption { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; }
+  .key.wall { background: var(--accent); opacity: 0.7; }
+  .key.touch { background: var(--ink); }
   .stage { display: grid; grid-template-rows: auto 1fr; gap: 8px; min-height: 420px; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
   .bar button { font: inherit; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
@@ -103,7 +110,14 @@
   <section class="out">
     <div id="check" data-status="pending" role="status" aria-live="polite"><strong>Loading OpenSCAD…</strong></div>
     <div class="results">
-      <table id="derived" aria-label="What the design works out to"></table>
+      <div class="side">
+        <table id="derived" aria-label="What the design works out to"></table>
+        <figure id="wallmap" hidden>
+          <canvas role="img" aria-label="The wall unrolled: vents and solid, two repeats of the pattern"></canvas>
+          <figcaption>The wall unrolled, to scale: along it across, up the frame upward. <span class="key wall"></span> wall,
+            darker where thicker; <span class="key touch"></span> touches the cells; gaps are vents. Ticks mark the cells' middles.</figcaption>
+        </figure>
+      </div>
       <div class="stage">
         <div class="bar">
           <button id="render" type="button">Render STL</button>

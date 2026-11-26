@@ -27,6 +27,8 @@ const SHOWN = {   // what the echo says, in order: [key, label, format]
     ["open_fraction", "Wall open", (v) => `${Math.round(v * 100)} %`],
     ["steepest_deg", "Steepest face inside", (v) => `${fmt(v)}°`],
     ["steepest_out_deg", "Steepest face outside", (v) => `${fmt(v)}°`],
+    ["vent_tallest", "Tallest vent", (v) => `${fmt(v)} mm`],
+    ["vent_widest", "Widest vent", (v) => `${fmt(v)} mm`],
     ["tie_shortest", "Shortest tie", (v) => `${fmt(v)} mm`],
     ["column_narrowest", "Narrowest column", (v) => `${fmt(v)} mm`],
   ],
@@ -97,7 +99,7 @@ function buildForm() {
   if (state.part === "coupons") form.append(spreadSection());
   let first = true;
   for (const [group, params] of groups) {
-    const open = first || group === "Block";
+    const open = first || group === "Block" || group === "Vents";
     first = false;
     form.append(el("details", { class: "group", open }, el("summary", {}, group), ...params.map(field)));
   }
@@ -174,6 +176,45 @@ function parseEcho(text, name) {
   if (!m) return null;
   try { return Object.fromEntries(JSON.parse(m[1].replace(/\bundef\b/g, "null"))); } catch { return null; }
 }
+function parseList(text, name) {
+  const m = text.match(new RegExp(`^ECHO: ${name} = (.+)$`, "m"));
+  try { return m ? JSON.parse(m[1]) : null; } catch { return null; }
+}
+
+// The wall unrolled: along it across, up the frame upward, two repeats of its pattern. Vents are holes; the wall is
+// shaded by how far its inside stands in from the datum (darker, thicker); where it reaches the cells' land it touches.
+function drawWallMap(map) {
+  const box = $("#wallmap");
+  box.hidden = !map;
+  if (!map) return;
+  const [ds, dz, contact, pitch, rows] = map;
+  const cols = rows[0].length, repeats = 2;
+  const width = cols * ds * repeats, height = (rows.length - 1) * dz;
+  const canvas = box.querySelector("canvas");
+  const scale = Math.min(300 / width, 340 / height);
+  const ratio = window.devicePixelRatio || 1;
+  canvas.style.width = `${width * scale}px`;
+  canvas.style.height = `${height * scale}px`;
+  canvas.width = Math.round(width * scale * ratio);
+  canvas.height = Math.round(height * scale * ratio);
+  const g = canvas.getContext("2d");
+  g.setTransform(scale * ratio, 0, 0, -scale * ratio, 0, height * scale * ratio);   // mm, z up
+  const css = getComputedStyle(document.documentElement);
+  const wall = css.getPropertyValue("--accent").trim(), touch = css.getPropertyValue("--ink").trim();
+  const deepest = Math.min(...rows.flat());
+  for (let r = 0; r < rows.length; r++) for (let rep = 0; rep < repeats; rep++) for (let c = 0; c < cols; c++) {
+    const v = rows[r][c];
+    if (v > 0) continue;   // a vent: leave it empty
+    g.fillStyle = v <= contact ? touch : wall;
+    g.globalAlpha = v <= contact ? 0.85 : 0.35 + 0.6 * (v / deepest);
+    g.fillRect((rep * cols + c) * ds, (r - 0.5) * dz, ds + 0.05, dz + 0.05);
+  }
+  g.globalAlpha = 1;
+  g.strokeStyle = touch;
+  g.lineWidth = 0.6 / scale;
+  for (let x = 0; x <= width + 1e-6; x += pitch) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, -3 / scale); g.stroke(); }
+}
+
 function refusals(text) {
   const out = [];
   for (const m of text.matchAll(/^ERROR: Assertion .*? failed: "(.*)" in file/gm)) out.push(m[1]);
@@ -197,6 +238,7 @@ async function check() {
   const text = res.echo + "\n" + res.log.join("\n");
   const name = state.part === "spacer" ? "SPACER" : "FRAME";
   showDerived(parseEcho(text, name), name);
+  drawWallMap(state.part === "frame" ? parseList(text, "WALL_MAP") : null);
   const bad = refusals(text);
   setCheck(bad.length ? "refused" : "ok", bad, res.ms);
 }
@@ -212,9 +254,11 @@ function setCheck(status, messages = [], ms) {
   }[status];
   box.replaceChildren(el("strong", {}, head), messages.length ? el("ul", {}, ...messages.map((m) => el("li", {}, m))) : "");
   $("#derived").classList.toggle("stale", status === "pending");
+  $("#wallmap").classList.toggle("stale", status === "pending");
 }
 
-const VENTS = ["contacts", "open_fraction", "steepest_deg", "steepest_out_deg", "tie_shortest", "column_narrowest"];
+const VENTS = ["contacts", "open_fraction", "steepest_deg", "steepest_out_deg", "tie_shortest", "column_narrowest",
+  "vent_tallest", "vent_widest"];
 function showDerived(values, name) {
   const table = $("#derived");
   if (!values) return table.replaceChildren();

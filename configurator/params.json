@@ -235,7 +235,38 @@
    "type": "number"
   },
   {
-   "caption": "mm, about how far apart the wave's lines of contact stand up each cell; their count follows from its length",
+   "caption": "waves along the wall per cell: 1 puts a crest at each cell's middle and a vent by each gap between cells",
+   "group": "Vents",
+   "initial": 1.0,
+   "name": "WAVES_PER_CELL",
+   "options": [
+    {
+     "name": "1",
+     "value": 1.0
+    },
+    {
+     "name": "2",
+     "value": 2.0
+    },
+    {
+     "name": "3",
+     "value": 3.0
+    }
+   ],
+   "type": "number"
+  },
+  {
+   "caption": "the along-the-wall wave's share of the travel; the up-the-frame wave has the rest. 0.5: round vents; more: tall slots",
+   "group": "Vents",
+   "initial": 0.5,
+   "max": 1.0,
+   "min": 0.0,
+   "name": "PLAN_WEIGHT",
+   "step": 0.05,
+   "type": "number"
+  },
+  {
+   "caption": "mm, about how far apart the up-the-frame wave's crests stand: its wavelength, and the lines of contact on a cell",
    "group": "Vents",
    "initial": 25.0,
    "max": 80.0,
@@ -245,7 +276,38 @@
    "type": "number"
   },
   {
-   "caption": "mm, a trough's clearance to the cell: the channel the draft rises through",
+   "caption": "degrees, where the up-the-frame crests fall: 90 sets the contact lines evenly between the bands, 0 the vents",
+   "group": "Vents",
+   "initial": 90.0,
+   "max": 180.0,
+   "min": 0.0,
+   "name": "SECTION_PHASE",
+   "step": 15.0,
+   "type": "number"
+  },
+  {
+   "caption": "of an up-the-frame wave, its shift from one cell to the next: 0.5 staggers the vents like brick bond, 0 lines them up",
+   "group": "Vents",
+   "initial": 0.5,
+   "name": "PHASE_STEP",
+   "options": [
+    {
+     "name": "0",
+     "value": 0.0
+    },
+    {
+     "name": "0.25",
+     "value": 0.25
+    },
+    {
+     "name": "0.5",
+     "value": 0.5
+    }
+   ],
+   "type": "number"
+  },
+  {
+   "caption": "mm, a trough's clearance to the cell: deeper troughs open bigger vents and wider channels beside the cells",
    "group": "Vents",
    "initial": 4.5,
    "max": 10.0,
@@ -255,7 +317,27 @@
    "type": "number"
   },
   {
-   "caption": "mm, the shortest tie across the wall between two openings one above the other",
+   "caption": "mm, how far a crest reaches past the cell's land: the land trims it, so a crest touches the cell over a patch",
+   "group": "Vents",
+   "initial": 1.0,
+   "max": 3.0,
+   "min": 0.0,
+   "name": "INTRUDE",
+   "step": 0.1,
+   "type": "number"
+  },
+  {
+   "caption": "how far the outside mirrors the inside's wave: 1 a full mirror, opening wherever the inside passes the datum; less, a thicker wall, smaller vents",
+   "group": "Vents",
+   "initial": 1.0,
+   "max": 1.0,
+   "min": 0.0,
+   "name": "REFLECT",
+   "step": 0.05,
+   "type": "number"
+  },
+  {
+   "caption": "mm, the shortest tie across the wall between two vents one above the other",
    "group": "Vents",
    "initial": 6.0,
    "max": 30.0,
@@ -265,7 +347,7 @@
    "type": "number"
   },
   {
-   "caption": "the narrowest column between two openings side by side, as a share of the pitch; TIE_MIN at the least",
+   "caption": "the narrowest column between two vents side by side, as a share of the along-the-wall wavelength; TIE_MIN at least",
    "group": "Vents",
    "initial": 0.35,
    "max": 1.0,
