@@ -42,6 +42,8 @@ const RESULTS = {   // [section, key, label, format, explanation]
     ["Grip", "grip", "Grip", (v) => (v === "gap" ? "in the gaps" : "on the wall"), "Where the bow springs sit"],
     ["Grip", "bow_span", "Bow span", (v) => `${fmt(v)} mm`, "8 mm is tested"],
     ["Grip", "bows_per_band", "Bows per band", (v) => v, "A band near each end"],
+    ["Grip", "inside", "Inside cells", (v) => (!v.count ? "none" : v.fit ? `${v.count}, by spacers` : `${v.count}, not held`),
+      "The cells with no wall: spacers in the diagonal gaps hold them, where the gap has room"],
     ["Vents", "open_share", "Wall open", (v) => `${Math.round(v * 100)} %`, "Between the bands of bows"],
     ["Vents", "vent_tallest", "Tallest vent", (v) => `${fmt(v)} mm`, ""],
     ["Vents", "vent_widest", "Widest vent", (v) => `${fmt(v)} mm`, ""],
@@ -367,7 +369,16 @@ async function check() {
   if (bad.length) return setCheck("refused", bad);
   showResults(values, name, map);
   drawPlan(values, name);
-  setCheck("ok", [], ms);
+  setCheck("ok", unheld(values), ms);
+}
+
+// A frame grips only its edge cells; spacers hold the ones inside. Say so when the diagonal gap has no room for them.
+function unheld(values) {
+  if (values?.part !== "frame" || values.spacers_fit) return [];
+  const inside = Math.max(0, values.cells[0] - 2) * Math.max(0, values.cells[1] - 2);
+  return inside ? [`The ${inside} cells inside the block are held only by their neighbours: the diagonal gap holds a `
+    + `bow of ${fmt(values.gap_span_max)} mm, under BOW_SPAN_MIN ${valueOf("BOW_SPAN_MIN")}, so no spacer fits. `
+    + "Widen CELL_GAP or PITCH, or hold them with your busbars or strip."] : [];
 }
 
 function setCheck(status, messages = [], ms) {
@@ -413,6 +424,8 @@ function showResults(values, name, map) {
   box.replaceChildren();
   if (!values) return;
   if ("steepest_inside_deg" in values) values.steepest = Math.max(values.steepest_inside_deg, values.steepest_outside_deg);
+  if ("spacers_fit" in values) values.inside = {
+    count: Math.max(0, values.cells[0] - 2) * Math.max(0, values.cells[1] - 2), fit: values.spacers_fit };
   const skip = values.part === "coupon" ? ["Vents"] : [];   // a coupon is one band deep: it has no vents
   const sections = new Map();
   for (const [section, key, label, f, why] of RESULTS[name]) {

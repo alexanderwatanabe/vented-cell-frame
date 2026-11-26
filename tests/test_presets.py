@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: CERN-OHL-S-2.0
-"""Every preset evaluates headless, as a frame in an array that fits the printer, a coupon and, where its gap holds a
-bow, a spacer; and the generated preset files match presets/cells.json."""
+"""Every preset evaluates headless, as a frame in an array that fits the printer, a coupon and a spacer, at the
+default gap; and the generated preset files match presets/cells.json."""
 
 import json
 import subprocess
@@ -11,13 +11,13 @@ import pytest
 from conftest import ROOT, echoed, evaluate, needs_openscad
 
 PRESETS = {c["name"]: c for c in json.loads((ROOT / "presets/cells.json").read_text())["cells"]}
-# A block that fits the 270 mm printer, the grip the default gap gives, and any vent settings the cell needs: past
+# A block that fits the 270 mm printer, the grip the default gap gives (at 3 mm, the gap grip for every preset), and any vent settings the cell needs: past
 # about 40 mm a vent's top is too wide to bridge with one wave per cell, and two need a thicker wall to stay under 45.
 LARGE = {"WAVES_PER_CELL": 2}
 EXPECT = {
-    "18650": ([4, 6], "wall", {}), "21700": ([4, 6], "wall", {}), "26650": ([4, 6], "gap", {}),
+    "18650": ([4, 6], "gap", {}), "21700": ([4, 6], "gap", {}), "26650": ([4, 6], "gap", {}),
     "32650": ([4, 6], "gap", {}), "32700": ([4, 6], "gap", {}), "33140": ([4, 6], "gap", {}),
-    "40135": ([4, 6], "gap", {}), "4680": ([3, 4], "gap", {**LARGE, "MIRROR": 0.75}),
+    "40135": ([4, 5], "gap", {}), "4680": ([3, 4], "gap", {**LARGE, "MIRROR": 0.75}),
     "66160": ([2, 2], "gap", {**LARGE, "MIRROR": 0.8}),
 }
 
@@ -35,6 +35,7 @@ def test_preset_frame(tmp_path, name):
     frame = echoed(text, "FRAME")
     assert [frame["body_d"], frame["body_l"]] == [PRESETS[name]["diameter"], PRESETS[name]["length"]]
     assert frame["grip"] == grip
+    assert frame["spacers_fit"]   # the default gap leaves room for the spacers that hold the cells inside
     assert frame["steepest_inside_deg"] <= 45 and frame["steepest_outside_deg"] <= 45 and frame["open_share"] > 0
 
 
@@ -47,7 +48,7 @@ def test_preset_coupon(tmp_path, name):
 
 
 @needs_openscad
-@pytest.mark.parametrize("name", [n for n, (_, grip, _) in EXPECT.items() if grip == "gap"])
+@pytest.mark.parametrize("name", list(EXPECT))
 def test_preset_spacer(tmp_path, name):
     ok, text = evaluate(tmp_path, "spacer", CELL=f'"{name}"')
     assert ok, text

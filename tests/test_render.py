@@ -31,12 +31,12 @@ def test_a_spacer_is_one_solid(tmp_path):
 
 
 def probe(tmp_path, y0, y1):
-    """The 21700 coupon (wall grip) cut down to a box behind its first bow's middle: 2 mm wide, 1 mm high at mid-band,
+    """The 21700 coupon packed tight (wall grip) cut down to a box behind its first bow's middle: 2 mm wide, 1 mm high at mid-band,
     y0 to y1 out from the cell's axis toward the wall. Its triangles, or None if the box is empty."""
     scad = tmp_path / "probe.scad"
     scad.write_text(f'include <{ROOT / "frame.scad"}>\n'
                     f"intersection() {{ part(); translate([-1, -{y1}, 3]) cube([2, {y1 - y0}, 1]); }}\n")
-    return render(tmp_path, scad, CELL='"21700"', VIEW='"none"', **COUPON)
+    return render(tmp_path, scad, CELL='"21700"', CELL_GAP=0.8, VIEW='"none"', **COUPON)
 
 
 def test_a_wall_grip_pocket_is_clear_behind_its_bow(tmp_path):

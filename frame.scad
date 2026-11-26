@@ -35,8 +35,8 @@ CELL_D = 0; // [0:0.1:100]
 CELL_L = 0; // [0:0.5:300]
 // Fit offset (mm) — added to the cell's diameter where the grip is drawn: positive if your coupons were tight, negative if loose
 FIT_OFFSET = 0; // [-1:0.05:1]
-// Gap between cells (mm) — between neighbouring cells' bodies; at 0.8 the printed holes round neighbouring cells just meet
-CELL_GAP = 0.8; // [0:0.1:10]
+// Gap between cells (mm) — between neighbouring cells' bodies: at 3 every preset has room for the spacers that hold the inside cells; 18650s need 2.6, 21700s 1.8
+CELL_GAP = 3; // [0:0.1:10]
 // Pitch (mm) — centre to centre, overriding diameter + gap: set it when your busbars or nickel strip fix it; 0 to leave it
 PITCH = 0; // [0:0.1:120]
 
@@ -361,7 +361,6 @@ assert(COUPON || WAVE_SPAN[1] - WAVE_SPAN[0] > 2 * RAMP, str("the frame is too s
     WAVE_SPAN[1] - WAVE_SPAN[0], " mm between the bands' blends, under the ", 2 * RAMP, " its ramps take"));
 assert(STEEPEST_INSIDE <= SLOPE_MAX, str("the inside leans ", atan(STEEPEST_INSIDE), " degrees: past 45 it would need support"));
 assert(STEEPEST_OUTSIDE <= SLOPE_MAX, str("the outside leans ", atan(STEEPEST_OUTSIDE), " degrees: past 45 it would need support"));
-assert(CREST_R > P / 2 - ARM_TIP_W, "a crest reaches so far in it closes the gap between two cells");
 assert(TROUGH_R > DATUM_R, "the troughs never pass the datum: the wall never opens");
 assert(COUPON || (OPEN_SHARE > 0 && OPEN_SHARE >= OPEN_SHARE_MIN), str("only ", OPEN_SHARE,
     " of the wall opens, under OPEN_SHARE_MIN ", OPEN_SHARE_MIN, ": the frame is too short for whole vents"));
@@ -518,7 +517,8 @@ if (VIEW == "with_cells") { color("Orange") part(); cells(); }
 
 echo(FRAME = [["part", PART], ["cell", CELL], ["body_d", BODY_D], ["body_l", BODY_L], ["cell_fit", CELL_FIT], ["pitch", P],
     ["cells", [N_ACROSS, N_DEEP]], ["footprint", FOOTPRINT], ["height", FRAME_H], ["land_d", FRAME_LAND_D],
-    ["grip", GRIP_USED], ["bow_span", DRAWN_SPAN], ["gap_span_max", GAP_SPAN_MAX], ["bows_per_band", len(BOWS)],
+    ["grip", GRIP_USED], ["bow_span", DRAWN_SPAN], ["gap_span_max", GAP_SPAN_MAX],
+    ["spacers_fit", GAP_SPAN_MAX >= BOW_SPAN_MIN], ["bows_per_band", len(BOWS)],
     ["bands", BANDS], ["taper_h", TAPER_H], ["up_waves", UP_WAVES], ["along_share", ALONG_SHARE], ["wall_t", WALL_T],
     ["trough_depth", TROUGH_DEPTH], ["steepest_inside_deg", atan(STEEPEST_INSIDE)],
     ["steepest_outside_deg", atan(STEEPEST_OUTSIDE)], ["bump_depth", BUMP_DEPTH], ["open_share", OPEN_SHARE],

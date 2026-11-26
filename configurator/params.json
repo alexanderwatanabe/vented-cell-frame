@@ -84,9 +84,9 @@
    "type": "number"
   },
   {
-   "caption": "Gap between cells (mm) \u2014 between neighbouring cells' bodies; at 0.8 the printed holes round neighbouring cells just meet",
+   "caption": "Gap between cells (mm) \u2014 between neighbouring cells' bodies: at 3 every preset has room for the spacers that hold the inside cells; 18650s need 2.6, 21700s 1.8",
    "group": "Cell",
-   "initial": 0.8,
+   "initial": 3.0,
    "max": 10.0,
    "min": 0.0,
    "name": "CELL_GAP",
@@ -492,9 +492,9 @@
    "type": "number"
   },
   {
-   "caption": "Gap between cells (mm) \u2014 between neighbouring cells' bodies; at 0.8 the printed holes round neighbouring cells just meet",
+   "caption": "Gap between cells (mm) \u2014 between neighbouring cells' bodies: at 3 every preset has room for the spacers that hold the inside cells; 18650s need 2.6, 21700s 1.8",
    "group": "Cell",
-   "initial": 0.8,
+   "initial": 3.0,
    "max": 10.0,
    "min": 0.0,
    "name": "CELL_GAP",

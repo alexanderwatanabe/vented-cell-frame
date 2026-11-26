@@ -9,7 +9,8 @@ of them, and you get an open-ended box the cells stand in, running their full le
 - **It prints standing, without supports.** The walls' faces are held at 45° or less, and every vent's top narrow
   enough to bridge.
 
-Loose **gap spacers** hold the cells inside the block, one in each diagonal gap near each end. The frame stops 1 mm
+The frame grips only the block's edge cells. Loose **gap spacers** hold the cells inside it, one in each diagonal gap
+near each end: the default 3 mm gap between cells leaves room for them with every preset. The frame stops 1 mm
 short of each end of the cells, so terminals, busbars and nickel strip stay clear.
 
 ![The configurator, with a 4 × 6 frame of 21700 cells](docs/configurator.png)
@@ -47,8 +48,8 @@ short of each end of the cells, so terminals, busbars and nickel strip stay clea
    Shape the vents if you like: the wall map redraws as you go. The page tells you if a setting can't be printed,
    and what to change. Press **Render frame**, then **Download**, and print it.
 4. **Step 3, Spacers.** Render a spacer and print as many as the page says your block needs, for the cells inside
-   the block. Small cells packed tightly (18650, 21700) have no room for spacers unless you widen the gap between
-   cells.
+   the block. Narrow the gap between cells and small cells lose the room for them (18650s need 2.6 mm, 21700s
+   1.8 mm): the frame's check says so, and the cells inside are then held only by their neighbours and your busbars.
 
 A coupon set renders in about 4 s, and a 4 × 6 frame of 21700s in about 25 s; frames of larger cells take a minute or
 two.
@@ -70,7 +71,7 @@ you set, so render a few offsets in turn.
 ```sh
 openscad --backend=manifold -o frame.stl -D 'CELL="21700"' -D CELL_COLUMNS=5 -D CELL_ROWS=4 -D FIT_OFFSET=0.1 frame.scad
 openscad --backend=manifold -o coupon.stl -D 'PART="coupon"' -D 'CELL="21700"' -D FIT_OFFSET=0.1 frame.scad
-openscad --backend=manifold -o spacer.stl -D 'CELL="21700"' -D CELL_GAP=2 spacer.scad
+openscad --backend=manifold -o spacer.stl -D 'CELL="21700"' spacer.scad
 ```
 
 Each setting has a short name for `-D`, shown beside it in the page and the Customizer. The coupon set as one STL
@@ -92,7 +93,7 @@ The settings most builds change:
 | Cell | `CELL` | A preset (below), or `"custom"` with `CELL_D` and `CELL_L`. |
 | Cell columns, cell rows | `CELL_COLUMNS`, `CELL_ROWS` | The block. |
 | Fit offset | `FIT_OFFSET` | From the coupon set. |
-| Gap between cells | `CELL_GAP` | Between neighbouring cells' bodies: 0.8 mm is the closest the printed holes allow. |
+| Gap between cells | `CELL_GAP` | Between neighbouring cells' bodies: 3 mm by default, room for the spacers with every preset. Down to about 0.8 mm the frame still prints, but small cells' spacers no longer fit. |
 | Pitch | `PITCH` | Centre to centre, overriding diameter + gap: set it when your busbars or nickel strip fix it. |
 | Grip | `GRIP` | `auto`, `gap` or `wall`; see [the grip](#the-grip). |
 | Printer size | `PRINTER_SIZE` | Your printer's build volume, its smallest side. Default 270 mm (Snapmaker U1). |
@@ -139,8 +140,9 @@ only sets where the spring sits.
 | `wall` | A pad on the wall in front of each edge cell's middle holds a full 8 mm bow, with the wall behind it. The ridges in the gaps stay, as plain lands. |
 | `auto` | `gap` where the gap holds a bow of at least `BOW_SPAN_MIN`, else `wall`. |
 
-At the default gap, 18650 and 21700 take the wall grip. Their diagonal gaps hold only a 2.5–3.7 mm bow, too short to
-spring.
+At the default 3 mm gap every preset takes the gap grip: an 18650's bow is 5.6 mm, a 21700's 6.8 mm. Packed tighter,
+18650 and 21700 take the wall grip, since at 0.8 mm their diagonal gaps hold only a 2.5–3.7 mm bow, too short to
+spring; and then no spacer fits, so the cells inside the block are held only by their neighbours.
 
 **Bow press** (`BOW_PRESS`) is how far the bows' faces stand inside the cell at their middle, on diameter: 1.0 mm by
 default, as tested. It is measured at the face, so changing the bow's thickness for another nozzle doesn't change it.

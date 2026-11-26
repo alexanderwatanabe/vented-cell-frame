@@ -8,10 +8,11 @@
 // tilt. Between them, a bow in a pocket on each face grips its cell (lib/grip.scad). Each bow runs the full height,
 // so every layer of it stands on the one below.
 //
-// It needs a diagonal gap wide enough for a bow: small cells at a tight pitch have none (README, "The grip").
+// It needs a diagonal gap wide enough for a bow: the default 3 mm gap between cells gives one for every preset, but
+// small cells at a tight pitch have none (README, "The grip").
 //
 //   openscad -o spacer.stl spacer.scad
-//   openscad -o spacer.stl -D 'CELL="21700"' -D CELL_GAP=2 spacer.scad
+//   openscad -o spacer.stl -D 'CELL="18650"' spacer.scad
 
 /* [Cell] */
 // Cell — a preset, or "custom" with its diameter below
@@ -20,8 +21,8 @@ CELL = "21700"; // [18650, 21700, 26650, 32650, 32700, 33140, 40135, 4680, 66160
 CELL_D = 0; // [0:0.1:100]
 // Fit offset (mm) — added to the cell's diameter where the grip is drawn: positive if your coupons were tight, negative if loose
 FIT_OFFSET = 0; // [-1:0.05:1]
-// Gap between cells (mm) — between neighbouring cells' bodies; at 0.8 the printed holes round neighbouring cells just meet
-CELL_GAP = 0.8; // [0:0.1:10]
+// Gap between cells (mm) — between neighbouring cells' bodies: at 3 every preset has room for the spacers that hold the inside cells; 18650s need 2.6, 21700s 1.8
+CELL_GAP = 3; // [0:0.1:10]
 // Pitch (mm) — centre to centre, overriding diameter + gap: set it when your busbars or nickel strip fix it; 0 to leave it
 PITCH = 0; // [0:0.1:120]
 

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: CERN-OHL-S-2.0
-import ast
+import json
 import re
 import struct
 import subprocess
@@ -48,7 +48,7 @@ def evaluate(tmp_path, part, **overrides):
 def echoed(text, name):
     found = re.search(rf"^ECHO: {name} = (.+)$", text, re.M)
     assert found, text
-    return dict(ast.literal_eval(found.group(1)))
+    return dict(json.loads(re.sub(r"\bundef\b", "null", found.group(1))))   # as the page reads it
 
 
 def render(tmp_path, source, **overrides):

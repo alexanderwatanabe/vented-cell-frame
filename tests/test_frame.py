@@ -67,8 +67,8 @@ def test_spacer_keeps_its_tested_shape(tmp_path):
     assert spacer["bow_past_land"] == pytest.approx(0.6)
 
 
-def test_small_cells_take_the_wall_grip_with_a_full_bow(tmp_path):
-    ok, text = evaluate(tmp_path, "frame", CELL='"18650"')
+def test_small_cells_packed_tight_take_the_wall_grip_with_a_full_bow(tmp_path):
+    ok, text = evaluate(tmp_path, "frame", CELL='"18650"', CELL_GAP=0.8)
     assert ok, text
     frame = echoed(text, "FRAME")
     assert frame["grip"] == "wall" and frame["bow_span"] == 8
@@ -119,18 +119,26 @@ def test_cells_that_would_overlap_are_refused_whatever_the_fit(tmp_path):
 
 
 def test_wall_grip_pockets_leave_the_wall_whole_behind_them(tmp_path):
-    ok, text = evaluate(tmp_path, "frame", CELL='"21700"', WALL_T=1.5)
+    ok, text = evaluate(tmp_path, "frame", CELL='"21700"', GRIP='"wall"', WALL_T=1.5)
     assert not ok and "the wall grip's pockets reach within" in text
 
 
 def test_the_gap_grip_is_refused_where_the_gap_holds_no_bow(tmp_path):
-    ok, text = evaluate(tmp_path, "frame", CELL='"18650"', GRIP='"gap"')
+    ok, text = evaluate(tmp_path, "frame", CELL='"18650"', CELL_GAP=0.8, GRIP='"gap"')
     assert not ok and 'use GRIP = "wall"' in text
 
 
 def test_the_spacer_is_refused_where_the_gap_holds_no_bow(tmp_path):
-    ok, text = evaluate(tmp_path, "spacer", CELL='"18650"')
+    ok, text = evaluate(tmp_path, "spacer", CELL='"18650"', CELL_GAP=0.8)
     assert not ok and "widen CELL_GAP or PITCH" in text
+
+
+def test_a_tight_frame_says_no_spacer_fits_and_grips_on_the_wall(tmp_path):
+    # small cells packed tightly: the frame still prints, but nothing can hold the cells inside the block
+    ok, text = evaluate(tmp_path, "frame", CELL='"21700"', CELL_GAP=0.8)
+    assert ok, text
+    frame = echoed(text, "FRAME")
+    assert not frame["spacers_fit"] and frame["grip"] == "wall"
 
 
 def test_a_spacer_bow_under_the_shortest_span_is_refused(tmp_path):
@@ -156,7 +164,7 @@ def test_a_custom_spacer_needs_only_its_diameter(tmp_path):
 def test_a_custom_cell_is_drawn_from_its_size(tmp_path):
     ok, text = evaluate(tmp_path, "frame", CELL='"custom"', CELL_D=20, CELL_L=70)
     assert ok, text
-    assert echoed(text, "FRAME")["pitch"] == pytest.approx(20.8)
+    assert echoed(text, "FRAME")["pitch"] == pytest.approx(23)
 
 
 def test_a_preset_named_as_a_number_is_found(tmp_path):
