@@ -30,8 +30,9 @@ short of each end of the cells, so terminals, busbars and nickel strip stay clea
 
 ## The easy way: the page, nothing to install
 
-1. **Download [`vented-cell-frame.html`](https://github.com/alexanderwatanabe/vented-cell-frame/raw/main/vented-cell-frame.html)**
-   and double-click it. It opens in your browser and runs OpenSCAD inside the page. It needs an internet
+1. **Save [`vented-cell-frame.html`](https://github.com/alexanderwatanabe/vented-cell-frame/raw/main/vented-cell-frame.html)
+   to your computer:** right-click the link and choose *Save Link As…* (a plain click shows its source instead). Then
+   double-click the saved file. It opens in your browser and runs OpenSCAD inside the page. It needs an internet
    connection, to load OpenSCAD and the 3D viewer.
 2. **Step 1, Coupon set: print this first.** Choose your cell and press **Render coupon set**, then **Download**,
    and print the STL. You get three small 2 × 2 corners of the frame, each with a fit offset printed on its tab.
