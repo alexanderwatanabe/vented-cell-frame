@@ -59,8 +59,10 @@ def test_small_cells_take_the_wall_grip_with_a_full_bow(tmp_path):
     (dict(PLAN_WEIGHT=1.5), "PLAN_WEIGHT is a share"),
     (dict(NC=8), "bigger than the printer"),
     (dict(CELL_L=50), "too short for its wave"),
+    (dict(CELL_L=55, NC=2, NR=2), "the wall never opens"),
+    (dict(CELL_L=58), "the frame is too short for whole vents"),
     (dict(GRIP='"none"'), "GRIP is auto, gap or wall"),
-], ids=["steep", "closed", "plan-weight", "printer", "short", "grip-name"])
+], ids=["steep", "closed", "plan-weight", "printer", "short", "no-vents", "slivers", "grip-name"])
 def test_frame_refuses(tmp_path, overrides, refusal):
     ok, text = evaluate(tmp_path, "frame", **{**TESTED, **overrides})
     assert not ok and refusal in text

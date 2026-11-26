@@ -71,6 +71,8 @@ CHANNEL = 4.5; // [1:0.1:10]
 TIE_MIN = 6; // [2:0.5:30]
 // the narrowest column between two openings side by side, as a share of the pitch; TIE_MIN at the least
 COLUMN_SHARE = 0.35; // [0:0.01:1]
+// the least share of the wall between the bands that opens: less, and a short frame opens only in slivers
+OPEN_MIN = 0.1; // [0:0.01:0.5]
 // mm, the wall's thickness in the bands: eight lines
 WALL_T = 3.2; // [1.2:0.1:8]
 // mm, the outside's bumps behind each cell where it is otherwise plain
@@ -274,6 +276,10 @@ assert(STEEPEST <= SLOPE_MAX, str("the wave leans ", atan(STEEPEST), " degrees: 
 assert(CREST_IN > P / 2 - ARM_TIP_W, "a crest reaches so far in it closes the gap between two cells");
 assert(STEEPEST_OUT <= SLOPE_MAX, str("the outside leans ", atan(STEEPEST_OUT), " degrees: past 45 it would need support"));
 assert(TROUGH > DATUM, "the wave never passes the datum: the wall never opens");
+assert(len(BANDS) < 2 || OPEN_FRACTION > 0, str("the wall never opens: the wave, ", OPEN_SPAN[1] - OPEN_SPAN[0],
+    " mm between the bands' blends, is too short to reach the datum"));
+assert(len(BANDS) < 2 || OPEN_FRACTION == 0 || OPEN_FRACTION >= OPEN_MIN, str("only ", OPEN_FRACTION,
+    " of the wall opens, under OPEN_MIN ", OPEN_MIN, ": the frame is too short for whole vents"));
 assert(REFLECT >= 0 && REFLECT <= 1, "REFLECT is a share, 0 to 1");
 assert(abs(P / PLAN_L - round(P / PLAN_L)) < 1e-6, "PLAN_L must divide the pitch, so every cell's middle is a crest");
 
