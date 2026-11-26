@@ -14,16 +14,41 @@
 //   openscad -o spacer.stl -D 'CELL="21700"' -D CELL_GAP=2 spacer.scad
 
 /* [Cell] */
-CELL = "33140";         // a preset in lib/cells.scad, or "custom" with CELL_D and CELL_L
-CELL_D = undef;         // mm, overrides the preset's body diameter
-CELL_L = undef;         // mm, overrides the preset's body length
-FIT_OFFSET = 0;         // mm, how much bigger the printed grip sees the cell than CELL_D: from the coupon (README)
-CELL_GAP = 0.8;         // mm between neighbouring cells' bodies: 0.8, the printed bores just meet
-PITCH = undef;          // mm, overrides CELL_D + CELL_GAP: usually the busbars set it
+// The cell: a preset (lib/cells.scad), or "custom" with its diameter and length below
+CELL = "21700"; // [18650, 21700, 26650, 32650, 32700, 33140, 40135, 4680, 66160, custom]
+// mm, the body's diameter; 0 takes the preset's
+CELL_D = 0; // [0:0.1:100]
+// mm, the body's length, end face to end face; 0 takes the preset's
+CELL_L = 0; // [0:0.5:300]
+// mm, how much bigger the printed grip sees the cell than its diameter: from the coupon set (README)
+FIT_OFFSET = 0; // [-1:0.05:1]
+// mm between neighbouring cells' bodies: 0.8, the printed bores just meet
+CELL_GAP = 0.8; // [0:0.1:10]
+// mm, the cell pitch, overriding diameter + gap (busbars usually set it); 0 takes diameter + gap
+PITCH = 0; // [0:0.1:120]
+
+/* [Grip] */
+// mm, the bow's span between its roots: the tested length, and the longest drawn
+BOW_SPAN = 8; // [4:0.5:12]
+// mm, the shortest bow drawn: shorter, it is too stiff to spring. Untested below 8
+BOW_SPAN_MIN = 5; // [3:0.5:12]
+// mm, the bow's thickness: two lines of a 0.4 mm nozzle
+BOW_T = 0.9; // [0.4:0.05:2]
+// mm on diameter, how far the bows' middles stand inside the cell: flush was a tad loose
+TIP_PRESS = 0.1; // [-0.5:0.05:1]
+// mm on diameter, the bore round the bows past the cell: a plain bore this size is a bit loose
+BORE_CLR = 0.8; // [0.2:0.1:2]
+// mm, the narrowest plastic between two neighbouring pockets: four lines
+NECK_MIN = 1.6; // [0.8:0.1:4]
+// mm, an arm between two side neighbours is cut where it narrows to this: thinner won't print as a wall
+ARM_TIP_W = 2; // [0.8:0.1:5]
+// mm on diameter, the lands' clearance to the cell: close enough to stop tilt, not to bind
+LAND_CLR = 0.2; // [0:0.05:1]
 
 /* [Spacer] */
-H = 18;                 // mm, the spacer's length along the cells: its lands far apart, so it can't rock
-VIEW = "part";          // part | inplace | top
+// mm, the spacer's length along the cells: its lands far apart, so it can't rock
+H = 18; // [6:1:60]
+VIEW = "part"; // [part, inplace, top]
 
 include <lib/grip.scad>
 
@@ -32,7 +57,11 @@ NECK = neck(SPAN_IN_GAP);
 assert(GAP_SPAN >= BOW_SPAN_MIN, str("the diagonal gap holds a bow of ", GAP_SPAN, " mm, under BOW_SPAN_MIN ",
     BOW_SPAN_MIN, ": widen CELL_GAP or PITCH"));
 assert(NECK >= NECK_MIN - 1e-9, str("the core's necks are ", NECK, " mm"));
+LAND_D = CELL_FIT + LAND_CLR;
+ARM_R = arm_r(LAND_D);
+GAP_R = P / sqrt(2) - LAND_D / 2;   // the centre of the gap to a land: its inscribed circle
 assert(ARM_R > GAP_R, "the arms reach past the core");
+assert(TIP < LAND_D, "the bows must stand in past the lands");
 
 module at_cells() for (c = CELLS) toward(c, [0, 0]) children();
 module body_2d(land_d) difference() {

@@ -1,0 +1,13 @@
+[project]
+name = "vented-cell-frame"
+version = "0.1.0"
+description = "A vented, printable frame for a block of cylindrical cells, in OpenSCAD"
+license = "CERN-OHL-S-2.0"
+requires-python = ">=3.10"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

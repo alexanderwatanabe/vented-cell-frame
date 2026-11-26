@@ -21,44 +21,84 @@
 //   openscad --backend=manifold -o frame.stl -D 'CELL="21700"' -D NC=5 -D NR=4 frame.scad
 
 /* [Cell] */
-CELL = "33140";         // a preset in lib/cells.scad, or "custom" with CELL_D and CELL_L
-CELL_D = undef;         // mm, overrides the preset's body diameter
-CELL_L = undef;         // mm, overrides the preset's body length, end face to end face
-FIT_OFFSET = 0;         // mm, how much bigger the printed grip sees the cell than CELL_D: from the coupon (README)
-CELL_GAP = 0.8;         // mm between neighbouring cells' bodies: 0.8, the printed bores just meet
-PITCH = undef;          // mm, overrides CELL_D + CELL_GAP: usually the busbars set it
+// The cell: a preset (lib/cells.scad), or "custom" with its diameter and length below
+CELL = "21700"; // [18650, 21700, 26650, 32650, 32700, 33140, 40135, 4680, 66160, custom]
+// mm, the body's diameter; 0 takes the preset's
+CELL_D = 0; // [0:0.1:100]
+// mm, the body's length, end face to end face; 0 takes the preset's
+CELL_L = 0; // [0:0.5:300]
+// mm, how much bigger the printed grip sees the cell than its diameter: from the coupon set (README)
+FIT_OFFSET = 0; // [-1:0.05:1]
+// mm between neighbouring cells' bodies: 0.8, the printed bores just meet
+CELL_GAP = 0.8; // [0:0.1:10]
+// mm, the cell pitch, overriding diameter + gap (busbars usually set it); 0 takes diameter + gap
+PITCH = 0; // [0:0.1:120]
 
 /* [Block] */
-NC = 4;                 // cells across the block
-NR = 6;                 // cells up the block
-GRIP = "auto";          // auto | gap | wall: where the edge cells' bows sit (README, "Grip")
-PRINT_MAX = 270;        // mm, the printer's build volume, its smallest side: 270 for a Snapmaker U1
-VIEW = "part";          // part | inplace | top
+// cells across the block
+NC = 4; // [2:1:20]
+// cells up the block
+NR = 6; // [2:1:20]
+// mm, the printer's build volume, its smallest side: 270 for a Snapmaker U1
+PRINT_MAX = 270; // [100:1:1000]
+
+/* [Grip] */
+// where the edge cells' bows sit: auto takes the gap where it holds a bow of BOW_SPAN_MIN, else the wall (README, "Grip")
+GRIP = "auto"; // [auto, gap, wall]
+// mm, the bow's span between its roots: the tested length, and the longest drawn
+BOW_SPAN = 8; // [4:0.5:12]
+// mm, the shortest bow drawn: shorter, it is too stiff to spring. Untested below 8
+BOW_SPAN_MIN = 5; // [3:0.5:12]
+// mm, the bow's thickness: two lines of a 0.4 mm nozzle
+BOW_T = 0.9; // [0.4:0.05:2]
+// mm on diameter, how far the bows' middles stand inside the cell: flush was a tad loose
+TIP_PRESS = 0.1; // [-0.5:0.05:1]
+// mm on diameter, the bore round the bows past the cell: a plain bore this size is a bit loose
+BORE_CLR = 0.8; // [0.2:0.1:2]
+// mm, the narrowest plastic between two neighbouring pockets: four lines
+NECK_MIN = 1.6; // [0.8:0.1:4]
+// mm, an arm between two side neighbours is cut where it narrows to this: thinner won't print as a wall
+ARM_TIP_W = 2; // [0.8:0.1:5]
+// mm on diameter, the frame's lands to the cell: wider than a spacer's, so a block slides in without binding
+FRAME_LAND_CLR = 0.6; // [0:0.05:2]
+
+/* [Vents] */
+// mm, about how far apart the wave's lines of contact stand up each cell; their count follows from its length
+CONTACT_L = 25; // [10:1:80]
+// mm, a trough's clearance to the cell: the channel the draft rises through
+CHANNEL = 4.5; // [1:0.1:10]
+// mm, the shortest tie across the wall between two openings one above the other
+TIE_MIN = 6; // [2:0.5:30]
+// the narrowest column between two openings side by side, as a share of the pitch; TIE_MIN at the least
+COLUMN_SHARE = 0.35; // [0:0.01:1]
+// mm, the wall's thickness in the bands: eight lines
+WALL_T = 3.2; // [1.2:0.1:8]
+// mm, the outside's bumps behind each cell where it is otherwise plain
+BIG_AMP = 4; // [0:0.5:10]
+// mm, each band of bows along the frame: short, to leave more of the frame to the wave
+BAND_H = 5; // [2:0.5:30]
+// mm, the frame stops this far short of each end face, clear of the terminals and busbars
+END_CLR = 1; // [0:0.5:20]
+
+/* [View] */
+VIEW = "part"; // [part, inplace, top]
 
 include <lib/grip.scad>
 
-/* [Frame inputs] */
-END_CLR = 1;            // mm, the frame stops this far short of each end face, clear of the terminals and busbars
-FRAME_LAND_CLR = 0.6;   // mm on diameter: the frame is long, so it can't tilt a cell; wider than a spacer's, so a block
-                        // of cells slides in without binding along its length
+/* [Hidden] */
 RELIEF_CLR = 1.2;       // mm, in the bands the wall stands this far back from the edge cells: the bows grip there
-WALL_T = 3.2;           // mm, the wall's thickness in the bands, eight lines; between them it swells and thins with the wave
 SPACER_INSET = 1;       // mm from each end of the frame to its band of bows
-BAND_H = 5;             // mm, a band of bows along the frame: short, to leave more of the frame to the wave
+RIDGE_LAND_CLR = 0.2;   // mm on diameter: the ridges are cut as a spacer's arms are, at a spacer's lands, as tested
+COLUMN_MIN = max(TIE_MIN, COLUMN_SHARE * P);   // mm: the columns' web is a share of the wave's length along the wall
 // The wall's inner face between the bands is two sine waves added: one along the wall (plan), one up the frame
 // (section), out of phase. Equal weights make them the same size; unequal, a major and a minor wave.
 PLAN_L = P;             // mm, the plan wave's length along the wall: one per cell, its crest at each cell's middle, so the
                         // columns between openings stay wide
 PLAN_WEIGHT = 0.5;      // the plan wave's share of the face's travel; the section wave has the rest: an even share keeps
                         // both the columns and the ties between the openings wide
-CONTACT_L = 25;         // mm, about how far apart the section wave's crests stand up the frame: lines of contact on each
-                        // cell. The count follows from the wave's height, so a short cell gets fewer
 SECTION_PHASE = 90;     // degrees, the section wave's phase against the plan wave's
 INTRUDE = 1.0;          // mm, a crest reaches this far past the land; the land then trims it to the cell's curve, so a
                         // crest touches the cell over a patch, not a point
-CHANNEL = 4.5;          // mm, a trough's clearance to the cell: the channel the draft rises through beside an edge cell
-BIG_AMP = 4;            // mm, bumps on the outside where it is otherwise plain, in the bands and round the corners, out
-                        // behind each cell's middle; they fade (G2) as the wave comes in
 BIG_L = P;              // mm, their length along the wall: one bump per cell
 REFLECT = 1;            // how far the outside mirrors the inside's wave about the datum: 1 a full mirror, 0 flat
 PHASE_STEP = 1 / 2;     // of a section wave, its shift up the frame per cell along the wall: openings in neighbouring
@@ -69,8 +109,6 @@ CORNER_N = 90;          // steps round a corner
 U_STEP = 1;             // mm, the wave's step along a wall
 Z_STEP = 1;             // mm, its step up the frame
 RAMP = 10;              // mm, over which the wave blends (G2) from the bands' relief: shorter, and its slope passes 45 degrees
-TIE_MIN = 6;            // mm, the shortest tie across the wall between two openings one above the other
-COLUMN_MIN = 12;        // mm, the narrowest column up the wall between two openings side by side
 SLOPE_MAX = 1;          // the steepest a face may lean from vertical: tan 45 degrees
 BOW_SLICE = 0.5;        // mm, the bows' step along the frame (the spacer uses SLICE; the frame has many more bows)
 
@@ -250,7 +288,7 @@ module ridges_2d() intersection() {
     difference() { inner_2d(BAND_OUT); offset(delta = -RIDGE_REACH) inner_2d(RELIEF_R); }
     corners_2d(BAND_OUT);
     union() {
-        for (g = RIDGE_GAPS) translate(g[0]) circle(r = ARM_R);
+        for (g = RIDGE_GAPS) translate(g[0]) circle(r = arm_r(CELL_FIT + RIDGE_LAND_CLR));
         if (GRIP_USED == "wall") for (gr = GRIPS) toward(gr[0], gr[1]) pad_2d();
     }
 }

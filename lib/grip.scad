@@ -5,23 +5,17 @@
 // sphere: furthest in at its band's middle and flush with the bore at both ends, so a cell's end edge meets a slope.
 // It draws nothing itself.
 //
-// The part's file sets the cell inputs before including this: CELL, CELL_D, CELL_L, FIT_OFFSET, CELL_GAP, PITCH.
+// The part's file sets its inputs before including this: the cell (CELL, CELL_D, CELL_L, FIT_OFFSET, CELL_GAP, PITCH)
+// and the spring.
 
 include <cells.scad>
 
-// The spring. Its sizes are millimetres set by the nozzle and the plastic, not by the cell: the cell only sets where
-// the spring sits. They were fit-tested on a 33.2 mm cell in PETG with a 0.4 mm nozzle.
-BOW_T = 0.9;            // mm, two lines of a 0.4 nozzle
-BOW_SPAN = 8;           // mm, the bow's span between its roots, the pocket's width: the tested length, the longest drawn
-BOW_SPAN_MIN = 5;       // mm, the shortest bow drawn: shorter, at BOW_T, it is too stiff to spring. ESTIMATE: untested
+// The spring's inputs (BOW_T, BOW_SPAN, BOW_SPAN_MIN, BORE_CLR, TIP_PRESS, NECK_MIN, ARM_TIP_W) are the part's, in its
+// Customizer sections; these follow from them or are fixed by the bow's shape.
 BOW_ROOT = 0.8;         // mm past the bore where the bow's ends meet the pocket's side walls: how deep it bows
 ROOT_EMBED = 0.6;       // mm each end runs into the side wall, so the root is solid plastic, not a touching corner
-POCKET_D = 1.6;         // mm past the bore: room behind the roots (BOW_ROOT + BOW_T / 2), and no deeper, so necks stay wide
-BORE_CLR = 0.8;         // mm on diameter, the bore round the bows past the cell: a plain bore this size is a bit loose
-TIP_PRESS = 0.1;        // mm on diameter, the bows' middles stand this far inside the cell: flush was a tad loose
-LAND_CLR = 0.2;         // mm on diameter, the spacer's lands to the cell: close enough to stop tilt, not to bind
-ARM_TIP_W = 2;          // mm, an arm is cut where the side gap narrows to this: thinner won't print as a wall
-NECK_MIN = 1.6;         // mm, the narrowest plastic between two neighbouring pockets: four lines
+ROOT_ROOM = 0.35;       // mm of pocket behind the roots
+POCKET_D = BOW_ROOT + BOW_T / 2 + ROOT_ROOM;   // mm past the bore: no deeper, so the necks between pockets stay wide
 CHAMFER = 0.6;          // mm, a 45 degree lead-in on the lands at both ends
 SLICE = 0.25;           // mm, the contoured bows' step along the axis
 
@@ -29,20 +23,19 @@ $fn = 120;
 
 PRESET = cell_preset(CELL);
 assert(CELL == "custom" || !is_undef(PRESET), str("unknown cell \"", CELL, "\": use one of ", CELL_NAMES, " or \"custom\""));
-BODY_D = is_undef(CELL_D) ? (is_undef(PRESET) ? undef : PRESET[1]) : CELL_D;   // mm, the cell's body
-BODY_L = is_undef(CELL_L) ? (is_undef(PRESET) ? undef : PRESET[2]) : CELL_L;   // mm, end face to end face
+BODY_D = CELL_D == 0 ? (is_undef(PRESET) ? undef : PRESET[1]) : CELL_D;   // mm, the cell's body
+BODY_L = CELL_L == 0 ? (is_undef(PRESET) ? undef : PRESET[2]) : CELL_L;   // mm, end face to end face
 assert(is_num(BODY_D) && is_num(BODY_L), "a custom cell needs CELL_D and CELL_L");
 
 CELL_FIT = BODY_D + FIT_OFFSET;   // the cell as the printed grip sees it
 BORE = CELL_FIT + BORE_CLR;       // the bore the bows and pockets are drawn round
 TIP = CELL_FIT - TIP_PRESS;       // across the bows' middles
-P = is_undef(PITCH) ? BODY_D + CELL_GAP : PITCH;   // the cell pitch
-LAND_D = CELL_FIT + LAND_CLR;
+P = PITCH == 0 ? BODY_D + CELL_GAP : PITCH;   // the cell pitch
 
-// An arm (along an axis, between two side neighbours) is cut where it is ARM_TIP_W wide; where the side gap is wider
-// than that all the way, it runs to the gap's middle.
-ARM_R = P / 2 - sqrt(max(0, pow(LAND_D / 2, 2) - pow(P / 2 - ARM_TIP_W / 2, 2)));
-GAP_R = P / sqrt(2) - LAND_D / 2;   // the centre of a diagonal gap to a land: its inscribed circle
+// A spacer's arm (along an axis, between two side neighbours) is cut where it is ARM_TIP_W wide, its flanks lands of
+// diameter land_d; where the side gap is wider than that all the way, it runs to the gap's middle. The frame's ridges
+// are cut the same way.
+function arm_r(land_d) = P / 2 - sqrt(max(0, pow(land_d / 2, 2) - pow(P / 2 - ARM_TIP_W / 2, 2)));
 
 // In a diagonal gap the pockets' inner walls stand POCKET_IN from the gap's centre, and two neighbouring pockets'
 // inner corners leave a neck between them. The longest bow the gap holds leaves NECK_MIN there.
@@ -52,8 +45,6 @@ SPAN_IN_GAP = min(BOW_SPAN, GAP_SPAN);
 function neck(span) = sqrt(2) * (POCKET_IN - span / 2);
 
 assert(P > CELL_FIT, str("the pitch ", P, " is under the cell's ", CELL_FIT, ": neighbours would collide"));
-assert(TIP < LAND_D, "the bows must stand in past the lands");
-assert(BOW_ROOT + BOW_T / 2 < POCKET_D, "the bows' roots fit in the pocket");
 
 // A bow and its pocket, in a frame whose x runs out from the cell's centre through the pocket's middle.
 function bow_x(y, tip, span) = tip / 2 + (BORE / 2 + BOW_ROOT - tip / 2) * pow(y / (span / 2), 2);
